@@ -1,0 +1,87 @@
+{
+	"actions": {
+		"Detect successful logins": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "service", "value": "login" }
+			},
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^Accepted password for (.*) from ([^ ]*)$", "save": [ "user", "ip" ] },
+				"else": "… Detect failed logins"
+			},
+			{
+				"action": "action_counterReset",
+				"args": { "counter": "fails", "for": "ip" }
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Login as {user} from {ip}" }
+			}
+		],
+		"… Detect failed logins": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^Failed password for (.*) from ([^ ]*)$", "save": [ "user", "ip" ] }
+			},
+			{
+				"filter": "filter_userExists",
+				"args": { "field": "user" },
+				"else": "… Report inexisting user"
+			},
+			{
+				"action": "action_email",
+				"args": { "subject": "You should have a look", "message": "Caution: Failed login as {user}@{_HOSTNAME} on {__REALTIME_TIMESTAMP}." }
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "Failed login as {user} from {ip}" },
+				"then": "… Detect repeated login failures"
+			}
+		],
+		"… Report inexisting user": [
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Failed login as {user} from {ip}" },
+				"then": "… Detect repeated login failures"
+			}
+		],
+		"… Detect repeated login failures": [
+			{
+				"action": "action_counterRaise",
+				"args": { "counter": "fails", "for": "ip", "keepSeconds": 600, "save": "failsCount" }
+			},
+			{
+				"filter": "filter_greaterOrEquals",
+				"args": { "field": "failsCount", "value": 3 }
+			},
+			{
+				"action": "action_nftBan",
+				"args": { "IP": "ip", "banSeconds": 100, "nftSetIPv4": "I4 bans", "nftSetIPv6": "I6 bans" }
+			}
+		]
+	},
+	"fallback": {
+		"all_filters_failed": {
+			"action": "action_testLog",
+			"args": { "level": "OTHER", "message": "Filter came last [{_HOSTNAME}:{service}] {MESSAGE}", "outFile": "unfiltered.log" }
+		},
+		"finalize_after_last_action": {
+			"action": "action_testLog",
+			"args": { "level": "OTHER", "message": "Action came last [{_HOSTNAME}:{service}] {MESSAGE}", "outFile": "acted_on.log" }
+		}
+	},
+	"email": {
+		"from": "pyruse@localhost",
+		"to": [
+			"hostmaster@localhost",
+			"webmaster@localhost"
+		],
+		"subject": "Pyruse Test Report",
+		"sendmail": [ "/usr/bin/awk", "{print >>\"email.dump\"}" ]
+	},
+	"nftBan": {
+		"nft": [ "/bin/sh", "-c", "echo \"$0\" >>\"nftBan.cmd\"" ]
+	},
+	"storage": "."
+}

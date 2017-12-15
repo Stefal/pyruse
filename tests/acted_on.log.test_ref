@@ -1,0 +1,2 @@
+{'__REALTIME_TIMESTAMP': datetime.datetime(2118, 1, 1, 8, 1, 1, 7), '_HOSTNAME': 'dmz', 'service': 'login', 'MESSAGE': 'Accepted password for root from 1.2.3.4', 'user': 'root', 'ip': '1.2.3.4'}
+{'__REALTIME_TIMESTAMP': datetime.datetime(2118, 1, 1, 8, 1, 1, 10), '_HOSTNAME': 'dmz', 'service': 'login', 'MESSAGE': 'Failed password for foobar from 1.2.3.4', 'user': 'foobar', 'ip': '1.2.3.4', 'failsCount': 3}
