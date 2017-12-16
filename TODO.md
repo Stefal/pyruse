@@ -1,7 +1,5 @@
 # TODO
 
-* Insert the GPL stuff in the source files.
-* Create a filter that rejects all messages that match a series of regular expressions.
 * Maybe switch from storing the daily journal in a file, to storing it in a database.
 * Write the systemd service that starts pyruse on boot.
 * Write the systemd service+timer that restores bans after a reboot.

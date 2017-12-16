@@ -1,3 +1,6 @@
+# pyruse is intended as a replacement to both fail2ban and epylog
+# Copyright © 2017 Y. Gablin
+# Full licensing information in the LICENSE file, or gnu.org/licences/gpl-3.0.txt if the file is missing.
 import os
 import subprocess
 import sys
@@ -25,7 +28,7 @@ def main():
         base.actionFallback = None
 
     # Unit tests
-    import filter_equals, filter_greaterOrEquals, filter_pcre, filter_userExists
+    import filter_equals, filter_greaterOrEquals, filter_pcre, filter_pcreAny, filter_userExists
     import action_counterRaise, action_counterReset, action_dailyReport, action_email, action_nftBan
 
     filter_equals.whenGreaterThenFalse()
@@ -43,6 +46,10 @@ def main():
     filter_pcre.whenNoMatchThenFalse()
     filter_pcre.whenSaveThenGroupsInEntry()
     filter_pcre.whenNamedGroupsThenFoundInEntry()
+
+    filter_pcreAny.whenMatchesThenTrue()
+    filter_pcreAny.whenNoMatchThenFalse()
+    filter_pcreAny.whenNamedGroupsThenFoundInEntry()
 
     filter_userExists.whenUserExistsThenTrue()
     filter_userExists.whenGarbageThenFalse()
