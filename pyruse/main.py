@@ -26,7 +26,15 @@ def _doForEachJournalEntry(fct):
         if event == journal.APPEND:
             for entry in j:
                 fct(j)
-    
+
+def boot(modName):
+    if "action_" in modName:
+        module.get({"action": modName}).module.boot()
+    elif "filter_" in modName:
+        module.get({"filter": modName}).module.boot()
+    else:
+        raise ValueError("Neither “action_” nor “filter_” found in the module name; the `boot` feature cannot work for %s\n" % modName)
+
 def main():
     _setPyrusePaths()
     conf = config.Config(PYRUSE_PATHS)

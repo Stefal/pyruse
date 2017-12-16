@@ -1,0 +1,16 @@
+[Unit]
+Description=Route systemd-journal logs to filters and actions (ban, report…)
+
+[Service]
+ExecStart=/usr/bin/pyruse
+CapabilityBoundingSet=CAP_SYS_CHROOT
+NoNewPrivileges=true
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=full
+ReadWriteDirectories=/var/lib/pyruse
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
