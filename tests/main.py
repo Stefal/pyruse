@@ -101,10 +101,11 @@ def main():
                     "diff -U0 \"$0\"{,.test_ref} | grep -vE '^[-+@^]{2,3} |={5,}[0-9]+=='",
                     f],
                 check = True)
-            assert false, "differences found in " + f
+            assert False, "differences found in " + f
         except subprocess.CalledProcessError:
             pass # OK, no difference found
     _clean()
+    os.remove('action_dailyReport.py.journal')
 
 def entry(host, service, message, microsecond = None):
     global _microsec

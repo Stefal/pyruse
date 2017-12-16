@@ -1,14 +1,17 @@
-import datetime
+import json
+import os
 import string
-from pyruse import base, email
+from collections import OrderedDict
+from datetime import datetime
+from pyruse import base, config, email
 
 class Action(base.Action):
-    WARN = "WARN"
-    INFO = "INFO"
-    OTHER = "OTHER"
+    _storage = config.Config().asMap().get("storage", "/var/lib/pyruse") \
+        + "/" + os.path.basename(__file__) + ".journal"
 
-    _messages = None
     _hour = 0
+    _out = open(_storage, "w", 1)
+    _out.write("[\n")
 
     _txtDocStart = '= Pyruse Report\n\n'
     _txtHeadWarn = '== WARNING Messages\n\n'
@@ -28,6 +31,46 @@ class Action(base.Action):
     _htmPreStart = '<pre>'
     _htmPreStop = '</pre>\n'
 
+    def __init__(self, args):
+        super().__init__()
+        l = args["level"]
+        if l == "WARN":
+            self.level = 1
+        elif l == "INFO":
+            self.level = 2
+        else:
+            self.level = 0
+        self.template = args["message"]
+        values = {}
+        for (_void, name, _void, _void) in string.Formatter().parse(self.template):
+            if name:
+                values[name] = None
+        self.values = values
+
+    def act(self, entry):
+        for (name, _void) in self.values.items():
+            self.values[name] = entry.get(name, None)
+        msg = self.template.format_map(self.values)
+        json.dump(
+            OrderedDict(L = self.level, T = entry["__REALTIME_TIMESTAMP"].timestamp(), M = msg),
+            Action._out
+        )
+        Action._out.write(",\n")
+        thisHour = datetime.today().hour
+        if thisHour < Action._hour:
+            self._closeJournal()
+            self._sendReport()
+            self._openJournal()
+        Action._hour = thisHour
+
+    def _closeJournal(self):
+        Action._out.write("{}]")
+        Action._out.close()
+
+    def _openJournal(self):
+        Action._out = open(Action._storage, "w", 1)
+        Action._out.write("[\n")
+
     def _encode(self, text):
         return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
@@ -41,40 +84,25 @@ class Action(base.Action):
             {"count": len(times), "text": self._encode(msg), "times": "<br/>".join(str(t) for t in times)}
         )
 
-    def __init__(self, args):
-        super().__init__()
-        self.level = args["level"]
-        self.isOther = self.level == Action.OTHER
-        self.template = args["message"]
-        values = {}
-        for (_void, name, _void, _void) in string.Formatter().parse(self.template):
-            if name:
-                values[name] = None
-        self.values = values
-
-    def act(self, entry):
-        messages = Action._messages[self.level]
-        for (name, _void) in self.values.items():
-            self.values[name] = entry.get(name, None)
-        msg = self.template.format_map(self.values)
-        if self.isOther:
-            messages.append((entry["__REALTIME_TIMESTAMP"], msg))
-        elif msg in messages:
-            messages[msg].append(entry["__REALTIME_TIMESTAMP"])
-        else:
-            messages[msg] = [entry["__REALTIME_TIMESTAMP"]]
-        thisHour = datetime.datetime.today().hour
-        if thisHour < Action._hour:
-            self._sendReport()
-        Action._hour = thisHour
-
     def _sendReport(self):
+        messages = [[], {}, {}]
+        with open(Action._storage) as journal:
+            for e in json.load(journal):
+                if e != {}:
+                    (L, T, M) = (e["L"], datetime.fromtimestamp(e["T"]), e["M"])
+                    if L == 0:
+                        messages[0].append((T, M))
+                    elif M in messages[L]:
+                        messages[L][M].append(T)
+                    else:
+                        messages[L][M] = [T]
+
         html = Action._htmDocStart + Action._htmHeadWarn
         text = Action._txtDocStart + Action._txtHeadWarn
 
         text += Action._txtTableDelim + Action._txtTableHeader
         html += Action._htmTableStart
-        for (msg, times) in sorted(Action._messages[Action.WARN].items(), key = lambda i: i[0]):
+        for (msg, times) in sorted(messages[1].items(), key = lambda i: i[0]):
             text += self._toAdoc(msg, times)
             html += self._toHtml(msg, times)
         text += Action._txtTableDelim
@@ -85,7 +113,7 @@ class Action(base.Action):
 
         text += Action._txtTableDelim + Action._txtTableHeader
         html += Action._htmTableStart
-        for (msg, times) in sorted(Action._messages[Action.INFO].items(), key = lambda i: i[0]):
+        for (msg, times) in sorted(messages[2].items(), key = lambda i: i[0]):
             text += self._toAdoc(msg, times)
             html += self._toHtml(msg, times)
         text += Action._txtTableDelim
@@ -96,7 +124,7 @@ class Action(base.Action):
 
         text += Action._txtPreDelim
         html += Action._htmPreStart
-        for (time, msg) in Action._messages[Action.OTHER]:
+        for (time, msg) in messages[0]:
             m = '%s: %s\n' % (time, msg)
             text += m
             html += self._encode(m)
@@ -105,9 +133,3 @@ class Action(base.Action):
         html += Action._htmDocStop
 
         email.Mail(text, html).send()
-        Action._messages = _resetMessages()
-
-def _resetMessages():
-    return {Action.WARN: {}, Action.INFO: {}, Action.OTHER: []}
-
-Action._messages = _resetMessages()
