@@ -33,3 +33,9 @@ Interesting [filtering entries](https://www.freedesktop.org/software/systemd/man
 * `_PID`: process ID of the systemd unit’s main process
 * `MESSAGE`: the actual message of the log entry
 * `__REALTIME_TIMESTAMP`: Python `datetime` of the log entry, formatted as: `YYYY-MM-DD HH:MM:SS:µµµµµµ`
+
+The `/etc/pyruse` directory is where system-specific files are looked-for:
+* the `pyruse.json` file that contains the configuration,
+* the `pyruse/actions` and `pyruse/filters` subfolders, which may contain additional actions and filters.
+
+Instead of using `/etc/pyruse`, an alternate directory may be specified with the `PYRUSE_EXTRA` environment variable.
