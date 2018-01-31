@@ -1,10 +1,11 @@
 # pyruse is intended as a replacement to both fail2ban and epylog
 # Copyright © 2017–2018 Y. Gablin
 # Full licensing information in the LICENSE file, or gnu.org/licences/gpl-3.0.txt if the file is missing.
-from pyruse import log, module
+from pyruse import config, log, module
 
 class Workflow:
     def __init__(self, actions):
+        self._withDebug = config.Config().asMap().get("debug", False)
         seen = {}
         dangling = []
         firstStep = None
@@ -28,11 +29,13 @@ class Workflow:
         firstStep = None
         isPreviousDangling = False
         isThenCalled = False
-        for step in actions[label]:
+        for stepNum, step in enumerate(actions[label]):
             if isThenCalled:
                 break
             mod = module.get(step)
             obj = mod.module
+            if self._withDebug:
+                obj.setStepName(label + '[' + str(stepNum) + ']')
             if mod.thenRun:
                 (seen, dangling) = \
                     self._branchToChain(obj.setNextStep, mod.thenRun, actions, seen, dangling)

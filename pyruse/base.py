@@ -15,6 +15,9 @@ class Step(abc.ABC):
     def setNextStep(self, obj):
         self.nextStep = obj
 
+    def setStepName(self, name):
+        self.stepName = name
+
 class Filter(Step):
     def __init__(self):
         super().__init__()
