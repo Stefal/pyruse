@@ -1,5 +1,5 @@
 # pyruse is intended as a replacement to both fail2ban and epylog
-# Copyright © 2017 Y. Gablin
+# Copyright © 2017–2018 Y. Gablin
 # Full licensing information in the LICENSE file, or gnu.org/licences/gpl-3.0.txt if the file is missing.
 import importlib
 from pyruse import log
@@ -19,16 +19,15 @@ def get(moduleDesc):
         isAction = False
         mod = _getModule("pyruse.filters." + moduleDesc["filter"])
         obj = mod.Filter(moduleDesc.get("args", {}))
-        thenRun = None
         elseRun = moduleDesc["else"] if "else" in moduleDesc else None
     elif "action" in moduleDesc:
         isAction = True
         mod = _getModule("pyruse.actions." + moduleDesc["action"])
         obj = mod.Action(moduleDesc.get("args", {}))
-        thenRun = moduleDesc["then"] if "then" in moduleDesc else None
         elseRun = None
     else:
         raise ValueError("Step is neither “filter” nor “action”: %s\n" % str(moduleDesc))
+    thenRun = moduleDesc["then"] if "then" in moduleDesc else None
     return Module(isAction, obj, thenRun, elseRun)
 
 def _getModule(modName):
