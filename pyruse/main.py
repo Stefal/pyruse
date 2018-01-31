@@ -17,7 +17,7 @@ def _setPyrusePaths():
             sys.path.insert(1, p)
     PYRUSE_PATHS.insert(0, os.curdir)
 
-def _doForEachJournalEntry(fct):
+def _doForEachJournalEntry(workflow):
     j = journal.Reader(journal.SYSTEM_ONLY)
     j.seek_tail()
     j.get_previous()
@@ -25,7 +25,9 @@ def _doForEachJournalEntry(fct):
         event = j.wait(None)
         if event == journal.APPEND:
             for entry in j:
-                fct(entry)
+                step = workflow.firstStep
+                while step is not None:
+                    step = step.run(entry)
 
 def boot(modName):
     if "action_" in modName:
@@ -39,7 +41,7 @@ def main():
     _setPyrusePaths()
     conf = config.Config(PYRUSE_PATHS).asMap().get("actions", {})
     wf = workflow.Workflow(conf)
-    _doForEachJournalEntry(wf.run)
+    _doForEachJournalEntry(wf)
 
 if __name__ == '__main__':
     main()

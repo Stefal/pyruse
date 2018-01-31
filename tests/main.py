@@ -53,9 +53,9 @@ def main():
     ]
     _clean()
     for e in test:
-        wf.run(e)
+        run(wf, e)
     actions.action_dailyReport.Action._hour = 25
-    wf.run(entry("bck", "login", "Failed password for root from ::1", 11))
+    run(wf, entry("bck", "login", "Failed password for root from ::1", 11))
     for f in ['acted_on.log', 'email.dump', 'nftBan.cmd', 'unfiltered.log']:
         assert os.path.exists(f), "file should exist: " + f
         try:
@@ -82,6 +82,11 @@ def entry(host, service, message, microsecond = None):
         "service": service,
         "MESSAGE": message
     }
+
+def run(workflow, logEntry):
+    step = workflow.firstStep
+    while step is not None:
+        step = step.run(logEntry)
 
 if __name__ == '__main__':
     main()

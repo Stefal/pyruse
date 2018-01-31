@@ -18,10 +18,7 @@ class Workflow:
                     for setter in dangling:
                         setter(entryPoint)
                 dangling = newDangling
-        self.run = firstStep.run if firstStep else self._noRun
-
-    def _noRun(self, whatever):
-        pass
+        self.firstStep = firstStep
 
     def _initChain(self, actions, label, seen):
         dangling = []
