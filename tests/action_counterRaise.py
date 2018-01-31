@@ -1,5 +1,5 @@
 # pyruse is intended as a replacement to both fail2ban and epylog
-# Copyright © 2017 Y. Gablin
+# Copyright © 2017–2018 Y. Gablin
 # Full licensing information in the LICENSE file, or gnu.org/licences/gpl-3.0.txt if the file is missing.
 import time
 from pyruse.actions.action_counterRaise import Action
@@ -50,3 +50,9 @@ def whenGraceTimeThenCountIs0():
     time.sleep(1)
     raiseAct.act(entry)
     assert entry["action_counterRaise4"] == 1
+
+def unitTests():
+    whenNonExistingThenRaiseTo1()
+    whenKeepSecondsThenRaiseUntilTimeOut()
+    whenDifferentKeyThenDifferentCounter()
+    whenGraceTimeThenCountIs0()

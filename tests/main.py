@@ -1,5 +1,5 @@
 # pyruse is intended as a replacement to both fail2ban and epylog
-# Copyright © 2017 Y. Gablin
+# Copyright © 2017–2018 Y. Gablin
 # Full licensing information in the LICENSE file, or gnu.org/licences/gpl-3.0.txt if the file is missing.
 import os
 import subprocess
@@ -31,52 +31,16 @@ def main():
     import filter_equals, filter_greaterOrEquals, filter_pcre, filter_pcreAny, filter_userExists
     import action_counterRaise, action_counterReset, action_dailyReport, action_email, action_nftBan
 
-    filter_equals.whenGreaterThenFalse()
-    filter_equals.whenEqualSameTypeThenTrue()
-    filter_equals.whenEqualDiffTypeThenTrue()
-    filter_equals.whenLowerThenFalse()
-
-    filter_greaterOrEquals.whenGreaterPosIntThenTrue()
-    filter_greaterOrEquals.whenGreaterNegFloatThenTrue()
-    filter_greaterOrEquals.whenEqualSameTypeThenTrue()
-    filter_greaterOrEquals.whenEqualDiffTypeThenTrue()
-    filter_greaterOrEquals.whenLowerThenFalse()
-
-    filter_pcre.whenMatchesThenTrue()
-    filter_pcre.whenNoMatchThenFalse()
-    filter_pcre.whenSaveThenGroupsInEntry()
-    filter_pcre.whenNamedGroupsThenFoundInEntry()
-
-    filter_pcreAny.whenMatchesThenTrue()
-    filter_pcreAny.whenNoMatchThenFalse()
-    filter_pcreAny.whenNamedGroupsThenFoundInEntry()
-
-    filter_userExists.whenUserExistsThenTrue()
-    filter_userExists.whenGarbageThenFalse()
-
-    action_counterRaise.whenNonExistingThenRaiseTo1()
-    action_counterRaise.whenKeepSecondsThenRaiseUntilTimeOut()
-    action_counterRaise.whenDifferentKeyThenDifferentCounter()
-    action_counterRaise.whenGraceTimeThenCountIs0()
-
-    action_counterReset.whenResetThenCountIs0()
-    action_counterReset.whenNoGraceTimeThenRaiseWorks()
-    action_counterReset.whenGraceTimeThenRaiseFails()
-    action_counterReset.whenGraceTimeThenRaiseWorksAtGraceEnd()
-
-    action_dailyReport.whenNewDayThenReport()
-    action_dailyReport.whenEmailThenCheckContents()
-    action_dailyReport.whenReportThenNewSetOfMessages()
-
-    action_email.whenEmailWithSubjectThenCheckContents()
-    action_email.whenEmailWithoutSubjectThenCheckContents()
-
-    action_nftBan.whenBanIPv4ThenAddToIPv4Set()
-    action_nftBan.whenBanIPv6ThenAddToIPv6Set()
-    action_nftBan.whenBanTwoIPThenTwoLinesInState()
-    action_nftBan.whenBanAnewThenNoDuplicate()
-    action_nftBan.whenFinishedBanThenAsIfNotThere()
-    action_nftBan.whenUnfinishedBanThenTimeoutReset()
+    filter_equals.unitTests()
+    filter_greaterOrEquals.unitTests()
+    filter_pcre.unitTests()
+    filter_pcreAny.unitTests()
+    filter_userExists.unitTests()
+    action_counterRaise.unitTests()
+    action_counterReset.unitTests()
+    action_dailyReport.unitTests()
+    action_email.unitTests()
+    action_nftBan.unitTests()
 
     # Integration test
     wf = workflow.Workflow(conf.asMap().get("actions", {}))
@@ -100,7 +64,7 @@ def main():
     actions.action_dailyReport.Action._hour = 25
     wf.run(entry("bck", "login", "Failed password for root from ::1", 11))
     for f in ['acted_on.log', 'email.dump', 'nftBan.cmd', 'unfiltered.log']:
-        assert os.path.exists(f)
+        assert os.path.exists(f), "file should exist: " + f
         try:
             subprocess.run(
                 [   "/usr/bin/bash",

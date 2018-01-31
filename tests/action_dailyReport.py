@@ -1,5 +1,5 @@
 # pyruse is intended as a replacement to both fail2ban and epylog
-# Copyright © 2017 Y. Gablin
+# Copyright © 2017–2018 Y. Gablin
 # Full licensing information in the LICENSE file, or gnu.org/licences/gpl-3.0.txt if the file is missing.
 import os
 import re
@@ -78,3 +78,8 @@ def whenReportThenNewSetOfMessages():
     assert os.path.exists(mail_filename)
     os.remove(mail_filename)
     whenEmailThenCheckContents()
+
+def unitTests():
+    whenNewDayThenReport()
+    whenEmailThenCheckContents()
+    whenReportThenNewSetOfMessages()
