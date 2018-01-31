@@ -16,7 +16,8 @@
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Login as {user} from {ip}" }
+				"args": { "level": "INFO", "message": "Login as {user} from {ip}" },
+				"then": "… finalize after last action"
 			}
 		],
 		"… Detect failed logins": [
@@ -57,19 +58,22 @@
 			},
 			{
 				"action": "action_nftBan",
-				"args": { "IP": "ip", "banSeconds": 100, "nftSetIPv4": "I4 bans", "nftSetIPv6": "I6 bans" }
+				"args": { "IP": "ip", "banSeconds": 100, "nftSetIPv4": "I4 bans", "nftSetIPv6": "I6 bans" },
+				"then": "… finalize after last action"
+			}
+		],
+		"all filters failed": [
+			{
+				"action": "action_testLog",
+				"args": { "level": "OTHER", "message": "Filter came last [{_HOSTNAME}:{service}] {MESSAGE}", "outFile": "unfiltered.log" }
+			}
+		],
+		"… finalize after last action": [
+			{
+				"action": "action_testLog",
+				"args": { "level": "OTHER", "message": "Action came last [{_HOSTNAME}:{service}] {MESSAGE}", "outFile": "acted_on.log" }
 			}
 		]
-	},
-	"fallback": {
-		"all_filters_failed": {
-			"action": "action_testLog",
-			"args": { "level": "OTHER", "message": "Filter came last [{_HOSTNAME}:{service}] {MESSAGE}", "outFile": "unfiltered.log" }
-		},
-		"finalize_after_last_action": {
-			"action": "action_testLog",
-			"args": { "level": "OTHER", "message": "Action came last [{_HOSTNAME}:{service}] {MESSAGE}", "outFile": "acted_on.log" }
-		}
 	},
 	"email": {
 		"from": "pyruse@localhost",

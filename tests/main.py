@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 
 sys.path.insert(1, "..")
-from pyruse import actions, base, config, module, workflow
+from pyruse import actions, config, module, workflow
 
 def _clean():
     for f in ['acted_on.log', 'action_nftBan.py.json', 'email.dump', 'nftBan.cmd', 'unfiltered.log']:
@@ -17,15 +17,6 @@ def _clean():
 def main():
     global _microsec
     conf = config.Config(os.curdir)
-    fback = conf.asMap().get("fallback", {})
-    if "all_filters_failed" in fback:
-        base.filterFallback = module.get(fback.get("all_filters_failed")).module
-    else:
-        base.filterFallback = None
-    if "finalize_after_last_action" in fback:
-        base.actionFallback = module.get(fback.get("finalize_after_last_action")).module
-    else:
-        base.actionFallback = None
 
     # Unit tests
     import filter_equals, filter_greaterOrEquals, filter_in, filter_lowerOrEquals, filter_pcre, filter_pcreAny, filter_userExists
