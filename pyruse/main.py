@@ -12,7 +12,7 @@ PYRUSE_PATHS = []
 def _setPyrusePaths():
     global PYRUSE_ENVVAR, PYRUSE_PATHS
     for p in "/etc/pyruse", os.environ.get(PYRUSE_ENVVAR):
-        if p != "" and os.path.isdir(p):
+        if p and os.path.isdir(p):
             PYRUSE_PATHS.insert(0, p)
             sys.path.insert(1, p)
     PYRUSE_PATHS.insert(0, os.curdir)
@@ -22,10 +22,10 @@ def _doForEachJournalEntry(fct):
     j.seek_tail()
     j.get_previous()
     while True:
-        event = j.wait(-1)
+        event = j.wait(None)
         if event == journal.APPEND:
             for entry in j:
-                fct(j)
+                fct(entry)
 
 def boot(modName):
     if "action_" in modName:
