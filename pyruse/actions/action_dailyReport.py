@@ -1,5 +1,5 @@
 # pyruse is intended as a replacement to both fail2ban and epylog
-# Copyright © 2017 Y. Gablin
+# Copyright © 2017–2018 Y. Gablin
 # Full licensing information in the LICENSE file, or gnu.org/licences/gpl-3.0.txt if the file is missing.
 import json
 import os
@@ -11,10 +11,8 @@ from pyruse import base, config, email
 class Action(base.Action):
     _storage = config.Config().asMap().get("storage", "/var/lib/pyruse") \
         + "/" + os.path.basename(__file__) + ".journal"
-
+    _out = None
     _hour = 0
-    _out = open(_storage, "w", 1)
-    _out.write("[\n")
 
     _txtDocStart = '= Pyruse Report\n\n'
     _txtHeadWarn = '== WARNING Messages\n\n'
@@ -33,6 +31,19 @@ class Action(base.Action):
     _htmTableStop = '</table>\n'
     _htmPreStart = '<pre>'
     _htmPreStop = '</pre>\n'
+
+    def _closeJournal():
+        Action._out.write("{}]")
+        Action._out.close()
+        Action._out = None
+
+    def _openJournal():
+        if Action._out is None:
+            if os.path.exists(Action._storage):
+                Action._out = open(Action._storage, "a", 1)
+            else:
+                Action._out = open(Action._storage, "w", 1)
+                Action._out.write("[\n")
 
     def __init__(self, args):
         super().__init__()
@@ -61,18 +72,10 @@ class Action(base.Action):
         Action._out.write(",\n")
         thisHour = datetime.today().hour
         if thisHour < Action._hour:
-            self._closeJournal()
+            Action._closeJournal()
             self._sendReport()
-            self._openJournal()
+            Action._openJournal()
         Action._hour = thisHour
-
-    def _closeJournal(self):
-        Action._out.write("{}]")
-        Action._out.close()
-
-    def _openJournal(self):
-        Action._out = open(Action._storage, "w", 1)
-        Action._out.write("[\n")
 
     def _encode(self, text):
         return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
@@ -99,6 +102,7 @@ class Action(base.Action):
                         messages[L][M].append(T)
                     else:
                         messages[L][M] = [T]
+        os.remove(Action._storage)
 
         html = Action._htmDocStart + Action._htmHeadWarn
         text = Action._txtDocStart + Action._txtHeadWarn
@@ -136,3 +140,5 @@ class Action(base.Action):
         html += Action._htmDocStop
 
         email.Mail(text, html).send()
+
+Action._openJournal()
