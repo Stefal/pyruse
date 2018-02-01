@@ -1,7 +1,7 @@
 # pyruse is intended as a replacement to both fail2ban and epylog
 # Copyright © 2017–2018 Y. Gablin
 # Full licensing information in the LICENSE file, or gnu.org/licences/gpl-3.0.txt if the file is missing.
-from pyruse import config, log, module
+from pyruse import base, config, log, module
 
 class Workflow:
     def __init__(self, actions):
@@ -19,6 +19,9 @@ class Workflow:
                         setter(entryPoint)
                 dangling = newDangling
         self.firstStep = firstStep
+        loop = self._checkForLoops()
+        if loop:
+            raise RecursionError("Loop found in actions: %s\n" % loop)
 
     def _initChain(self, actions, label, seen):
         dangling = []
@@ -51,11 +54,11 @@ class Workflow:
             previousSetter = obj.setNextStep
         if isPreviousDangling:
             dangling.append(previousSetter)
-        seen[label] = firstStep
+        seen[label] = firstStep if len(dangling) == 0 else None
         return (firstStep, seen, dangling)
 
     def _branchToChain(self, parentSetter, branchName, actions, seen, dangling):
-        if branchName in seen:
+        if branchName in seen and seen[branchName]:
             parentSetter(seen[branchName])
         elif branchName in actions:
             (entryPoint, seen, newDangling) = \
@@ -65,3 +68,24 @@ class Workflow:
         else:
             raise ValueError("Action chain not found: %s\n" % branchName)
         return (seen, dangling)
+
+    def _checkForLoops(self):
+        if self.firstStep is None:
+            return None
+        branches = [(self.firstStep, [], [])]
+        while True:
+            node, branchIds, branch = branches.pop()
+            idNode = id(node)
+            if idNode in branchIds:
+                return branch if self._withDebug else True
+            branchIds.append(idNode)
+            if self._withDebug:
+                branch.append(node.stepName)
+            if isinstance(node, base.Filter) and node.altStep:
+                altBranch = list(branch)
+                altBranchIds = list(branchIds)
+                branches.append((node.altStep, altBranchIds, altBranch))
+            if node.nextStep:
+                branches.append((node.nextStep, branchIds, branch))
+            if len(branches) == 0:
+                return None
