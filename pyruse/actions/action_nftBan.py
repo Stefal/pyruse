@@ -41,9 +41,12 @@ class Action(base.Action):
             pass # new file
 
         if previousTS:
-            cmd = list(Action._nft)
-            cmd.append("delete element %s {%s}" % (nftSet, ip))
-            subprocess.run(cmd)
+            try:
+                cmd = list(Action._nft)
+                cmd.append("delete element %s {%s}" % (nftSet, ip))
+                subprocess.run(cmd)
+            except Exception:
+                pass # too late: not a problem
 
         until = self._doBan(now, ip, nftSet)
 
