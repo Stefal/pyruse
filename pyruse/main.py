@@ -18,6 +18,7 @@ def _setPyrusePaths():
     PYRUSE_PATHS.insert(0, os.curdir)
 
 def _doForEachJournalEntry(workflow):
+    enc8b = config.Config().asMap().get("8bit-message-encoding", "iso-8859-1")
     j = journal.Reader(journal.SYSTEM_ONLY)
     j.seek_tail()
     j.get_previous()
@@ -25,6 +26,9 @@ def _doForEachJournalEntry(workflow):
         event = j.wait(None)
         if event == journal.APPEND:
             for entry in j:
+                m = entry['MESSAGE']
+                if not isinstance(m, str):
+                    entry['MESSAGE'] = m.decode(enc8b)
                 step = workflow.firstStep
                 while step is not None:
                     step = step.run(entry)
