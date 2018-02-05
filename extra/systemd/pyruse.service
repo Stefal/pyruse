@@ -4,7 +4,7 @@ Description=Route systemd-journal logs to filters and actions (ban, report…)
 [Service]
 ExecStart=/usr/bin/pyruse
 WorkingDirectory=/etc/pyruse
-CapabilityBoundingSet=CAP_SYS_CHROOT
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SYS_CHROOT
 NoNewPrivileges=true
 PrivateDevices=yes
 PrivateTmp=yes
