@@ -27,9 +27,9 @@ class Mail:
 		message["From"] = Address(addr_spec = self.mailFrom)
 		message["To"] = (Address(addr_spec = a) for a in self.mailTo)
 
-		message.set_content(self.text)
+		message.set_content(self.text, cte = "quoted-printable")
 		if self.html:
-			message.add_alternative(self.html, subtype = "html")
+			message.add_alternative(self.html, subtype = "html", cte = "quoted-printable")
 
 		subprocess.run(
 			Mail._mailConf.get("sendmail", ["/usr/bin/sendmail", "-t"]),

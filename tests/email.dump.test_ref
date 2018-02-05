@@ -2,7 +2,7 @@ Subject: You should have a look
 From: pyruse@localhost
 To: hostmaster@localhost, webmaster@localhost
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: quoted-printable
 MIME-Version: 1.0
 
 Caution: Failed login as nobody@dmz on 2118-01-01 08:01:01.000003.
@@ -10,7 +10,7 @@ Subject: You should have a look
 From: pyruse@localhost
 To: hostmaster@localhost, webmaster@localhost
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: quoted-printable
 MIME-Version: 1.0
 
 Caution: Failed login as root@bck on 2118-01-01 08:01:01.000008.
@@ -18,7 +18,7 @@ Subject: You should have a look
 From: pyruse@localhost
 To: hostmaster@localhost, webmaster@localhost
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: quoted-printable
 MIME-Version: 1.0
 
 Caution: Failed login as nobody@bck on 2118-01-01 08:01:01.000009.
@@ -26,7 +26,7 @@ Subject: You should have a look
 From: pyruse@localhost
 To: hostmaster@localhost, webmaster@localhost
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: quoted-printable
 MIME-Version: 1.0
 
 Caution: Failed login as nobody@dmz on 2118-01-01 08:01:01.000011.
@@ -34,7 +34,7 @@ Subject: You should have a look
 From: pyruse@localhost
 To: hostmaster@localhost, webmaster@localhost
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: quoted-printable
 MIME-Version: 1.0
 
 Caution: Failed login as root@bck on 2118-01-01 08:01:01.000012.
@@ -43,18 +43,22 @@ From: pyruse@localhost
 To: hostmaster@localhost, webmaster@localhost
 MIME-Version: 1.0
 Content-Type: multipart/alternative;
- boundary="===============1561885666140999446=="
+ boundary="===============6551036056715332970=="
 
---===============1561885666140999446==
+--===============6551036056715332970==
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: quoted-printable
 
-= Pyruse Report
+=3D Pyruse Report
 
-== WARNING Messages
+=3D=3D WARNING Messages
 
-|===============================================================================
-|Count|Message                                    |Date+time for each occurrence
+|=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D
+|Count|Message                                    |Date+time for each occurre=
+nce
 
 |  1  |Failed login as nobody from 1.2.3.4
       |2118-01-01 08:01:01.000009
@@ -68,12 +72,19 @@ Content-Transfer-Encoding: 7bit
 
 |  1  |Failed login as root from ::1
       |2118-01-01 08:01:01.000012
-|===============================================================================
+|=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D
 
-== Information Messages
+=3D=3D Information Messages
 
-|===============================================================================
-|Count|Message                                    |Date+time for each occurrence
+|=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D
+|Count|Message                                    |Date+time for each occurre=
+nce
 
 |  1  |Failed login as Unknown User from 1.2.3.4
       |2118-01-01 08:01:01.000002
@@ -86,62 +97,91 @@ Content-Transfer-Encoding: 7bit
 
 |  1  |Login as root from 1.2.3.4
       |2118-01-01 08:01:01.000007
-|===============================================================================
+|=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D
 
-== Other log events
+=3D=3D Other log events
 
 ----------
 2118-01-01 08:01:01.000001: Filter came last [dmz:ftp] an ftp message
-2118-01-01 08:01:01.000002: Filter came last [dmz:login] Failed password for Unknown User from 1.2.3.4
-2118-01-01 08:01:01.000003: Filter came last [dmz:login] Failed password for nobody from 5.6.7.8
-2118-01-01 08:01:01.000004: Filter came last [dmz:login] End of session for root on localhost
-2118-01-01 08:01:01.000005: Filter came last [dmz:login] Failed password for User Unknown from 1.2.3.4
+2118-01-01 08:01:01.000002: Filter came last [dmz:login] Failed password for =
+Unknown User from 1.2.3.4
+2118-01-01 08:01:01.000003: Filter came last [dmz:login] Failed password for =
+nobody from 5.6.7.8
+2118-01-01 08:01:01.000004: Filter came last [dmz:login] End of session for r=
+oot on localhost
+2118-01-01 08:01:01.000005: Filter came last [dmz:login] Failed password for =
+User Unknown from 1.2.3.4
 2118-01-01 08:01:01.000006: Filter came last [bck:ftp] file requested
-2118-01-01 08:01:01.000007: Action came last [dmz:login] Accepted password for root from 1.2.3.4
-2118-01-01 08:01:01.000008: Filter came last [bck:login] Failed password for root from 1.2.3.4
-2118-01-01 08:01:01.000009: Filter came last [bck:login] Failed password for nobody from 1.2.3.4
-2118-01-01 08:01:01.000010: Action came last [dmz:login] Failed password for foobar from 1.2.3.4
-2118-01-01 08:01:01.000011: Filter came last [dmz:login] Failed password for nobody from 5.6.7.8
+2118-01-01 08:01:01.000007: Action came last [dmz:login] Accepted password fo=
+r root from 1.2.3.4
+2118-01-01 08:01:01.000008: Filter came last [bck:login] Failed password for =
+root from 1.2.3.4
+2118-01-01 08:01:01.000009: Filter came last [bck:login] Failed password for =
+nobody from 1.2.3.4
+2118-01-01 08:01:01.000010: Action came last [dmz:login] Failed password for =
+foobar from 1.2.3.4
+2118-01-01 08:01:01.000011: Filter came last [dmz:login] Failed password for =
+nobody from 5.6.7.8
 ----------
 
---===============1561885666140999446==
+--===============6551036056715332970==
 Content-Type: text/html; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: quoted-printable
 MIME-Version: 1.0
 
 <html>
-<head><meta charset="utf-8"/></head>
+<head><meta charset=3D"utf-8"/></head>
 <body>
 <h1>Pyruse Report</h1>
 <h2>WARNING Messages</h2>
 <table>
 <tr><th>Count</th><th>Message</th><th>Date+time for each occurrence</th></tr>
-<tr><td>1</td><td>Failed login as nobody from 1.2.3.4</td><td>2118-01-01 08:01:01.000009</td></tr>
-<tr><td>2</td><td>Failed login as nobody from 5.6.7.8</td><td>2118-01-01 08:01:01.000003<br/>2118-01-01 08:01:01.000011</td></tr>
-<tr><td>1</td><td>Failed login as root from 1.2.3.4</td><td>2118-01-01 08:01:01.000008</td></tr>
-<tr><td>1</td><td>Failed login as root from ::1</td><td>2118-01-01 08:01:01.000012</td></tr>
+<tr><td>1</td><td>Failed login as nobody from 1.2.3.4</td><td>2118-01-01 08:0=
+1:01.000009</td></tr>
+<tr><td>2</td><td>Failed login as nobody from 5.6.7.8</td><td>2118-01-01 08:0=
+1:01.000003<br/>2118-01-01 08:01:01.000011</td></tr>
+<tr><td>1</td><td>Failed login as root from 1.2.3.4</td><td>2118-01-01 08:01:=
+01.000008</td></tr>
+<tr><td>1</td><td>Failed login as root from ::1</td><td>2118-01-01 08:01:01.0=
+00012</td></tr>
 </table>
 <h2>Information Messages</h2>
 <table>
 <tr><th>Count</th><th>Message</th><th>Date+time for each occurrence</th></tr>
-<tr><td>1</td><td>Failed login as Unknown User from 1.2.3.4</td><td>2118-01-01 08:01:01.000002</td></tr>
-<tr><td>1</td><td>Failed login as User Unknown from 1.2.3.4</td><td>2118-01-01 08:01:01.000005</td></tr>
-<tr><td>1</td><td>Failed login as foobar from 1.2.3.4</td><td>2118-01-01 08:01:01.000010</td></tr>
-<tr><td>1</td><td>Login as root from 1.2.3.4</td><td>2118-01-01 08:01:01.000007</td></tr>
+<tr><td>1</td><td>Failed login as Unknown User from 1.2.3.4</td><td>2118-01-0=
+1 08:01:01.000002</td></tr>
+<tr><td>1</td><td>Failed login as User Unknown from 1.2.3.4</td><td>2118-01-0=
+1 08:01:01.000005</td></tr>
+<tr><td>1</td><td>Failed login as foobar from 1.2.3.4</td><td>2118-01-01 08:0=
+1:01.000010</td></tr>
+<tr><td>1</td><td>Login as root from 1.2.3.4</td><td>2118-01-01 08:01:01.0000=
+07</td></tr>
 </table>
 <h2>Other log events</h2>
 <pre>2118-01-01 08:01:01.000001: Filter came last [dmz:ftp] an ftp message
-2118-01-01 08:01:01.000002: Filter came last [dmz:login] Failed password for Unknown User from 1.2.3.4
-2118-01-01 08:01:01.000003: Filter came last [dmz:login] Failed password for nobody from 5.6.7.8
-2118-01-01 08:01:01.000004: Filter came last [dmz:login] End of session for root on localhost
-2118-01-01 08:01:01.000005: Filter came last [dmz:login] Failed password for User Unknown from 1.2.3.4
+2118-01-01 08:01:01.000002: Filter came last [dmz:login] Failed password for =
+Unknown User from 1.2.3.4
+2118-01-01 08:01:01.000003: Filter came last [dmz:login] Failed password for =
+nobody from 5.6.7.8
+2118-01-01 08:01:01.000004: Filter came last [dmz:login] End of session for r=
+oot on localhost
+2118-01-01 08:01:01.000005: Filter came last [dmz:login] Failed password for =
+User Unknown from 1.2.3.4
 2118-01-01 08:01:01.000006: Filter came last [bck:ftp] file requested
-2118-01-01 08:01:01.000007: Action came last [dmz:login] Accepted password for root from 1.2.3.4
-2118-01-01 08:01:01.000008: Filter came last [bck:login] Failed password for root from 1.2.3.4
-2118-01-01 08:01:01.000009: Filter came last [bck:login] Failed password for nobody from 1.2.3.4
-2118-01-01 08:01:01.000010: Action came last [dmz:login] Failed password for foobar from 1.2.3.4
-2118-01-01 08:01:01.000011: Filter came last [dmz:login] Failed password for nobody from 5.6.7.8
+2118-01-01 08:01:01.000007: Action came last [dmz:login] Accepted password fo=
+r root from 1.2.3.4
+2118-01-01 08:01:01.000008: Filter came last [bck:login] Failed password for =
+root from 1.2.3.4
+2118-01-01 08:01:01.000009: Filter came last [bck:login] Failed password for =
+nobody from 1.2.3.4
+2118-01-01 08:01:01.000010: Action came last [dmz:login] Failed password for =
+foobar from 1.2.3.4
+2118-01-01 08:01:01.000011: Filter came last [dmz:login] Failed password for =
+nobody from 5.6.7.8
 </pre>
 </body></html>
 
---===============1561885666140999446==--
+--===============6551036056715332970==--
