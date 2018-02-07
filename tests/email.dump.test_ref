@@ -43,9 +43,9 @@ From: pyruse@localhost
 To: hostmaster@localhost, webmaster@localhost
 MIME-Version: 1.0
 Content-Type: multipart/alternative;
- boundary="===============6551036056715332970=="
+ boundary="===============4651269279566948653=="
 
---===============6551036056715332970==
+--===============4651269279566948653==
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -127,17 +127,18 @@ foobar from 1.2.3.4
 nobody from 5.6.7.8
 ----------
 
---===============6551036056715332970==
+--===============4651269279566948653==
 Content-Type: text/html; charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 MIME-Version: 1.0
 
 <html>
-<head><meta charset=3D"utf-8"/></head>
+<head><meta charset=3D"utf-8"/><style type=3D"text/css">td{vertical-align: to=
+p}</style></head>
 <body>
 <h1>Pyruse Report</h1>
 <h2>WARNING Messages</h2>
-<table>
+<table border=3D"1">
 <tr><th>Count</th><th>Message</th><th>Date+time for each occurrence</th></tr>
 <tr><td>1</td><td>Failed login as nobody from 1.2.3.4</td><td>2118-01-01 08:0=
 1:01.000009</td></tr>
@@ -149,7 +150,7 @@ MIME-Version: 1.0
 00012</td></tr>
 </table>
 <h2>Information Messages</h2>
-<table>
+<table border=3D"1">
 <tr><th>Count</th><th>Message</th><th>Date+time for each occurrence</th></tr>
 <tr><td>1</td><td>Failed login as Unknown User from 1.2.3.4</td><td>2118-01-0=
 1 08:01:01.000002</td></tr>
@@ -184,4 +185,4 @@ nobody from 5.6.7.8
 </pre>
 </body></html>
 
---===============6551036056715332970==--
+--===============4651269279566948653==--
