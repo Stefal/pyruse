@@ -34,6 +34,8 @@ def _doForEachJournalEntry(workflow):
                     step = step.run(entry)
 
 def boot(modName):
+    _setPyrusePaths()
+    conf = config.Config(PYRUSE_PATHS)
     if "action_" in modName:
         module.get({"action": modName}).module.boot()
     elif "filter_" in modName:

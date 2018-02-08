@@ -1,3 +1,4 @@
 #!/usr/bin/python
+import sys
 from pyruse import main
 main.boot(sys.argv[1])
