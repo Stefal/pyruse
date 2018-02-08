@@ -37,9 +37,9 @@ def boot(modName):
     _setPyrusePaths()
     conf = config.Config(PYRUSE_PATHS)
     if "action_" in modName:
-        module.get({"action": modName}).module.boot()
+        module.get({"action": modName, "args": None}).module.boot()
     elif "filter_" in modName:
-        module.get({"filter": modName}).module.boot()
+        module.get({"filter": modName, "args": None}).module.boot()
     else:
         raise ValueError("Neither “action_” nor “filter_” found in the module name; the `boot` feature cannot work for %s\n" % modName)
 

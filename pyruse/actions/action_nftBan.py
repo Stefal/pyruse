@@ -14,6 +14,8 @@ class Action(base.Action):
 
     def __init__(self, args):
         super().__init__()
+        if args is None:
+            return # on-boot configuration
         self.ipv4Set = args["nftSetIPv4"]
         self.ipv6Set = args["nftSetIPv6"]
         self.field = args["IP"]
@@ -30,7 +32,7 @@ class Action(base.Action):
         try:
             with open(Action._storage) as dataFile:
                 for ban in json.load(dataFile):
-                    if ban["timestamp"] <= now.timestamp():
+                    if ban["timestamp"] > 0 and ban["timestamp"] <= now.timestamp():
                         continue
                     elif {k: ban[k] for k in newBan.keys()} == newBan:
                         # should not happen, since the IP is banned…
@@ -40,7 +42,7 @@ class Action(base.Action):
         except IOError:
             pass # new file
 
-        if previousTS:
+        if previousTS is not None:
             try:
                 cmd = list(Action._nft)
                 cmd.append("delete element %s {%s}" % (nftSet, ip))
@@ -48,9 +50,15 @@ class Action(base.Action):
             except Exception:
                 pass # too late: not a problem
 
-        until = self._doBan(now, ip, nftSet)
+        if self.banSeconds:
+            until = now + datetime.timedelta(seconds = self.banSeconds)
+            newBan["timestamp"] = until.timestamp()
+            timeout = self.banSeconds
+        else:
+            newBan["timestamp"] = 0
+            timeout = 0
 
-        newBan["timestamp"] = until.timestamp()
+        self._doBan(timeout, ip, nftSet)
         bans.append(newBan)
         with open(Action._storage, "w") as dataFile:
             json.dump(bans, dataFile)
@@ -61,27 +69,29 @@ class Action(base.Action):
         try:
             with open(Action._storage) as dataFile:
                 for ban in json.load(dataFile):
-                    if ban["timestamp"] <= now.timestamp():
+                    if ban["timestamp"] == 0:
+                        self._doBan(0, ban["IP"], ban["nftSet"])
+                        bans.append(ban)
+                    elif ban["timestamp"] <= now.timestamp():
                         continue
                     else:
+                        until = datetime.datetime.utcfromtimestamp(ban["timestamp"])
+                        timeout = (until - now).total_seconds()
+                        self._doBan(int(timeout), ban["IP"], ban["nftSet"])
                         bans.append(ban)
-                        self._doBan(now, ip, nftSet)
         except IOError:
             pass # no file
 
         with open(Action._storage, "w") as dataFile:
             json.dump(bans, dataFile)
 
-    def _doBan(self, now, ip, nftSet):
-        if self.banSeconds:
-            until = now + datetime.timedelta(seconds = self.banSeconds)
-            timeout = " timeout %ss" % str(self.banSeconds)
-        else:
-            until = now + datetime.timedelta(days = 365)
+    def _doBan(self, seconds, ip, nftSet):
+        if seconds < 0:
+            return # can happen when the threshold is crossed while computing the duration
+        if seconds == 0:
             timeout = ""
-
+        else:
+            timeout = " timeout %ss" % seconds
         cmd = list(Action._nft)
         cmd.append("add element %s {%s%s}" % (nftSet, ip, timeout))
         subprocess.run(cmd)
-
-        return until
