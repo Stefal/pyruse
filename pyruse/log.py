@@ -19,6 +19,10 @@ def debug(string):
 	global DEBUG
 	log(DEBUG, string)
 
+def notice(string):
+	global NOTICE
+	log(NOTICE, string)
+
 def error(string):
 	global ERR
 	log(ERR, string)
