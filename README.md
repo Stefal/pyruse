@@ -6,13 +6,8 @@ Its purpose is to peruse the system log entries, warn of important situations, r
 * [Functional overview](doc/intro_func.md)
 * [Technical overview](doc/intro_tech.md)
 
-The software requirements are:
-
-* a modern systemd-based Linux operating system (eg. [Archlinux](https://archlinux.org/)- or [Fedora](https://getfedora.org/)-based distributions);
-* python, at least version 3.1 (or [more, depending on the modules](doc/intro_tech.md) being used);
-* [python-systemd](https://www.freedesktop.org/software/systemd/python-systemd/journal.html);
-* [nftables](http://wiki.nftables.org/) _if_ IP address bans are to be managed;
-* a sendmail-like program _if_ emails are wanted.
+Pyruse is [packaged for Archlinux](https://aur.archlinux.org/packages/pyruse/).
+For other distributions, please [read the manual installation instructions](doc/install.md).
 
 The `/etc/pyruse` directory is where system-specific files are looked-for:
 
