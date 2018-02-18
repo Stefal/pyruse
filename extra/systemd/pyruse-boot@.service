@@ -5,7 +5,6 @@ Description=Initialization of pyruse module %I
 Type=oneshot
 ExecStart=/usr/bin/pyruse-boot "%I"
 WorkingDirectory=/etc/pyruse
-CapabilityBoundingSet=CAP_SYS_CHROOT
 NoNewPrivileges=true
 PrivateDevices=yes
 PrivateTmp=yes
