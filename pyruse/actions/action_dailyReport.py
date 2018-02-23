@@ -6,7 +6,23 @@ import os
 import string
 from collections import OrderedDict
 from datetime import datetime
+from enum import Enum, unique
 from pyruse import base, config, email
+
+@unique
+class Details(Enum):
+    NONE      = [ lambda l: [] ]
+    FIRST     = [ lambda l: ["From : " + str(t) for t in l[:1]]  ]
+    LAST      = [ lambda l: ["Until: " + str(t) for t in l[-1:]] ]
+    FIRSTLAST = [ lambda l: ["From : " + str(l[0]), "Until: " + str(l[-1])] if len(l) > 1 else [str(t) for t in l] ]
+    ALL       = [ lambda l: [str(t) for t in l] ]
+
+    def __init__(self, wrapper):
+        self.fn = wrapper[0]
+    def toAdoc(self, times):
+        return " +\n       ".join(str(t) for t in self.fn(times))
+    def toHtml(self, times):
+        return "<br/>".join(str(t) for t in self.fn(times))
 
 class Action(base.Action):
     _storage = config.Config().asMap().get("storage", "/var/lib/pyruse") \
@@ -47,6 +63,7 @@ class Action(base.Action):
 
     def __init__(self, args):
         super().__init__()
+
         l = args["level"]
         if l == "WARN":
             self.level = 1
@@ -54,6 +71,7 @@ class Action(base.Action):
             self.level = 2
         else:
             self.level = 0
+
         self.template = args["message"]
         values = {}
         for (_void, name, _void, _void) in string.Formatter().parse(self.template):
@@ -61,12 +79,20 @@ class Action(base.Action):
                 values[name] = None
         self.values = values
 
+        ts = args.get("details", Details.ALL.name)
+        for e in Details:
+            if ts == e.name:
+                self.details = e
+                break
+        else:
+            self.details = Details.ALL
+
     def act(self, entry):
         for (name, _void) in self.values.items():
             self.values[name] = entry.get(name, None)
         msg = self.template.format_map(self.values)
         json.dump(
-            OrderedDict(L = self.level, T = entry["__REALTIME_TIMESTAMP"].timestamp(), M = msg),
+            OrderedDict(L = self.level, T = entry["__REALTIME_TIMESTAMP"].timestamp(), M = msg, D = self.details.name),
             Action._out
         )
         Action._out.write(",\n")
@@ -81,27 +107,34 @@ class Action(base.Action):
         return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
     def _toAdoc(self, msg, times):
-        return "\n|{count:^5d}|{text}\n      |{times}\n".format_map(
-            {"count": len(times), "text": msg, "times": " +\n       ".join(str(t) for t in times)}
-        )
+        return "\n|{count:^5d}|{text}\n      |{times}\n".format_map({
+            "count": sum(len(t) for (_void, t) in times.items()),
+            "text": msg,
+            "times": "\n       +\n       ".join(d.toAdoc(t) for (d,t) in times.items())
+        })
 
     def _toHtml(self, msg, times):
-        return "<tr><td>{count}</td><td>{text}</td><td>{times}</td></tr>\n".format_map(
-            {"count": len(times), "text": self._encode(msg), "times": "<br/>".join(str(t) for t in times)}
-        )
+        return "<tr><td>{count}</td><td>{text}</td><td>{times}</td></tr>\n".format_map({
+            "count": sum(len(t) for (_void, t) in times.items()),
+            "text": self._encode(msg),
+            "times": "<br/><br/>".join(d.toHtml(t) for (d,t) in times.items())
+        })
 
     def _sendReport(self):
         messages = [[], {}, {}]
         with open(Action._storage) as journal:
             for e in json.load(journal):
                 if e != {}:
-                    (L, T, M) = (e["L"], datetime.fromtimestamp(e["T"]), e["M"])
+                    (L, T, M, D) = (e["L"], datetime.fromtimestamp(e["T"]), e["M"], e.get("D", Details.ALL.name))
                     if L == 0:
                         messages[0].append((T, M))
-                    elif M in messages[L]:
-                        messages[L][M].append(T)
                     else:
-                        messages[L][M] = [T]
+                        dd = Details[D]
+                        if M not in messages[L]:
+                            messages[L][M] = {}
+                        if dd not in messages[L][M]:
+                            messages[L][M][dd] = []
+                        messages[L][M][dd].append(T)
         os.remove(Action._storage)
 
         html = Action._htmDocStart + Action._htmHeadWarn

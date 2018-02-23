@@ -11,6 +11,10 @@ mail_filename = "email.dump"
 wAction = Action({"level": "WARN", "message": "WarnMsg {m}"})
 iAction = Action({"level": "INFO", "message": "InfoMsg {m}"})
 oAction = Action({"level": "OTHER", "message": "MiscMsg {m}"})
+wActFirst = Action({"level": "WARN", "message": "WarnMsg {m}", "details": "FIRST"})
+wActLast = Action({"level": "WARN", "message": "WarnMsg {m}", "details": "LAST"})
+wActFL = Action({"level": "WARN", "message": "WarnMsg {m}", "details": "FIRSTLAST"})
+wActNone = Action({"level": "WARN", "message": "WarnMsg {m}", "details": "NONE"})
 
 def newEntry(m):
     return {"__REALTIME_TIMESTAMP": datetime.utcnow(), "m": m}
@@ -18,7 +22,6 @@ def newEntry(m):
 def whenNewDayThenReport():
     if os.path.exists(mail_filename):
         os.remove(mail_filename)
-    Action._hour = 0
     oAction.act(newEntry("message1"))
     assert not os.path.exists(mail_filename)
     Action._hour = 25
@@ -26,10 +29,9 @@ def whenNewDayThenReport():
     assert os.path.exists(mail_filename)
     os.remove(mail_filename)
 
-def whenEmailThenCheckContents():
+def whenEmailThenCheck3Sections():
     if os.path.exists(mail_filename):
         os.remove(mail_filename)
-    Action._hour = 0
     wAction.act(newEntry("messageW"))
     iAction.act(newEntry("messageI"))
     Action._hour = 25
@@ -70,6 +72,73 @@ def whenEmailThenCheckContents():
     assert nbMisc == 2
     os.remove(mail_filename)
 
+def _compareEmailWithExpected(expected):
+    assert os.path.exists(mail_filename)
+    reTime = re.compile(r"\d{4}(?:[- :.]\d{2}){6}\d{4}")
+    warnSeen = False
+    nbTimes = 0
+    nbFirst = 0
+    nbLast = 0
+    line = ""
+    with open(mail_filename, 'rt') as m:
+        for l in m:
+            if l != "" and l[-1:] == "=":
+                line += l[:-1]
+                continue
+            elif l == "" and warnSeen:
+                break
+            line += l
+            if "WarnMsg" in line:
+                warnSeen = True
+            elif not warnSeen:
+                line = ""
+                continue
+            nbTimes += len(reTime.findall(line))
+            if "From=C2=A0:" in line:
+                nbFirst += 1
+            if "Until:" in line:
+                nbLast += 1
+            if "</tr>" in line:
+                break
+            line = ""
+    seen = dict(warn = warnSeen, times = nbTimes, first = nbFirst, last = nbLast)
+    assert seen == expected, "Expected=" + str(expected) + " ≠ Seen=" + str(seen)
+    os.remove(mail_filename)
+
+def whenEmailThenCheckTimes(warnAction, expected):
+    if os.path.exists(mail_filename):
+        os.remove(mail_filename)
+    warnAction.act(newEntry("messageW"))
+    warnAction.act(newEntry("messageW"))
+    Action._hour = 25
+    warnAction.act(newEntry("messageW"))
+    _compareEmailWithExpected(expected)
+
+def whenSeveralDetailsModesThenOnlyOneWarn():
+    if os.path.exists(mail_filename):
+        os.remove(mail_filename)
+    wAction.act(newEntry("messageW"))
+    wAction.act(newEntry("messageW"))
+    wAction.act(newEntry("messageW"))
+    wAction.act(newEntry("messageW"))
+    wAction.act(newEntry("messageW"))
+    wActFirst.act(newEntry("messageW"))
+    wActFirst.act(newEntry("messageW"))
+    wActFirst.act(newEntry("messageW"))
+    wActLast.act(newEntry("messageW"))
+    wActLast.act(newEntry("messageW"))
+    wActLast.act(newEntry("messageW"))
+    wActFL.act(newEntry("messageW"))
+    wActFL.act(newEntry("messageW"))
+    wActFL.act(newEntry("messageW"))
+    wActFL.act(newEntry("messageW"))
+    wActNone.act(newEntry("messageW"))
+    wActNone.act(newEntry("messageW"))
+    wActNone.act(newEntry("messageW"))
+    Action._hour = 25
+    wActNone.act(newEntry("messageW"))
+    _compareEmailWithExpected(dict(warn = True, times = 9, first = 2, last = 2))
+
 def whenReportThenNewSetOfMessages():
     if os.path.exists(mail_filename):
         os.remove(mail_filename)
@@ -77,9 +146,14 @@ def whenReportThenNewSetOfMessages():
     oAction.act(newEntry("message3"))
     assert os.path.exists(mail_filename)
     os.remove(mail_filename)
-    whenEmailThenCheckContents()
+    whenEmailThenCheck3Sections()
 
 def unitTests():
     whenNewDayThenReport()
-    whenEmailThenCheckContents()
+    whenEmailThenCheck3Sections()
+    whenEmailThenCheckTimes(wActFirst, dict(warn = True, times = 1, first = 1, last = 0))
+    whenEmailThenCheckTimes(wActLast, dict(warn = True, times = 1, first = 0, last = 1))
+    whenEmailThenCheckTimes(wActFL, dict(warn = True, times = 2, first = 1, last = 1))
+    whenEmailThenCheckTimes(wActNone, dict(warn = True, times = 0, first = 0, last = 0))
+    whenSeveralDetailsModesThenOnlyOneWarn()
     whenReportThenNewSetOfMessages()

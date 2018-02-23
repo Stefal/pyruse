@@ -15,8 +15,9 @@ It should be noted, that modern Python API are used. Thus:
 * Python version ≥ 3.1 is required for managing modules (`importlib`);
 * Python version ≥ 3.1 is required for loading the configuration (json’s `object_pairs_hook`);
 * Python version ≥ 3.2 is required for the daily report and emails (string’s `format_map`);
-* Python version ≥ 3.5 is required for IP address bans and emails (subprocess’ `run`);
-* Python version ≥ 3.6 is required for sending emails (`headerregistry`, `EmailMessage`).
+* Python version ≥ 3.4 is required for the daily report (`enum`);
+* Python version ≥ 3.5 is required for IP address bans and emails, thus also the daily report (subprocess’ `run`);
+* Python version ≥ 3.6 is required for emails, thus also the daily report (`headerregistry`, `EmailMessage`).
 
 In order to be fast, this program avoids dynamic decisions while running.
 To this end, a static workflow of filters and actions is built upon start, based on the configuration file.
