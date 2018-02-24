@@ -4,7 +4,7 @@ Pyruse comes with a few very simple filters.
 
 ## `=`, `≤`, `≥`, `in`
 
-The filters `filter_equals`, `filter_lowerOrEquals`, and `filter_greaterOrEquals` simply check equality on inequality between a given field, given by the parameter `field`, and a constant value, given py the parameter `value`.
+The filters `filter_equals`, `filter_lowerOrEquals`, and `filter_greaterOrEquals` simply check equality or inequality between a given field, given by the parameter `field`, and a constant value, given py the parameter `value`.
 Both parameters are mandatory.
 Here are two examples:
 
@@ -31,6 +31,21 @@ Here is an example:
 ```
 
 For any of these filters, the constant values must be of the same type as the typical contents of the chosen field.
+
+## Test if an IP address is part of given networks
+
+Filter `filter_inNetworks` reads an IP address in a field given by the `field` parameter, and a list of networks in the `nets` parameter; each net is written as an IP address, then “`/`”, then an integer network mask.
+
+The filter is passing if the IP address that was read is part of one of the networks configured for the filter.
+
+Here is an example:
+
+```json
+{
+  "filter": "filter_inNetworks",
+  "args": { "field": "IP", "nets": [ "fd00::/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" ] }
+}
+```
 
 ## Perl-compatible regular expressions (pcre)
 

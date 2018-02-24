@@ -19,12 +19,13 @@ def main():
     conf = config.Config(os.curdir)
 
     # Unit tests
-    import filter_equals, filter_greaterOrEquals, filter_in, filter_lowerOrEquals, filter_pcre, filter_pcreAny, filter_userExists
+    import filter_equals, filter_greaterOrEquals, filter_in, filter_inNetworks, filter_lowerOrEquals, filter_pcre, filter_pcreAny, filter_userExists
     import action_counterRaise, action_counterReset, action_dailyReport, action_email, action_nftBan
 
     filter_equals.unitTests()
     filter_greaterOrEquals.unitTests()
     filter_in.unitTests()
+    filter_inNetworks.unitTests()
     filter_lowerOrEquals.unitTests()
     filter_pcre.unitTests()
     filter_pcreAny.unitTests()

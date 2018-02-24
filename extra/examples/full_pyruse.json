@@ -86,14 +86,22 @@
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "WARN", "message": "Failed login as {thatUser}@{_HOSTNAME} on Nextcloud" },
-				"then": "… Detect repeated Nextcloud login failures"
+				"then": "… Do not ban local Nextcloud users"
 			}
 		],
 		"… Report inexisting Nextcloud user": [
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "INFO", "message": "Failed login as {thatUser}@{_HOSTNAME} on Nextcloud" },
-				"then": "… Detect repeated Nextcloud login failures"
+				"then": "… Do not ban local Nextcloud users"
+			}
+		],
+		"… Do not ban local Nextcloud users": [
+			{
+				"action": "filter_inNetworks",
+				"args": { "field": "thatIP", "nets": [ "192.168.1.0/24", "fd00::/8" ] },
+				"then": "… NOOP",
+				"else": "… Detect repeated Nextcloud login failures"
 			}
 		],
 		"… Detect repeated Nextcloud login failures": [
@@ -251,7 +259,7 @@
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "INFO", "message": "Failed login on {_HOSTNAME} by HTTPS" },
-				"then": "… Detect repeated HTTPS failures"
+				"then": "… Do not ban local HTTP users"
 			}
 		],
 		"… Detect abnormal HTTP 404 errors": [
@@ -261,8 +269,16 @@
 					"open\\(\\) \"[^\"]*\\.(?:cgi|php|pl|py|sh)\" failed \\(2: No such file or directory\\), client: (?P<thatIP>[^,]+),",
 					"Unable to open primary script: .*\\.(?:cgi|php|pl|py|sh) \\(No such file or directory[^,]+, client: (?P<thatIP>[^,]+),"
 				] },
-				"then": "… Detect repeated HTTPS failures",
+				"then": "… Do not ban local HTTP users",
 				"else": "… Immediate warning for connectivity errors"
+			}
+		],
+		"… Do not ban local HTTP users": [
+			{
+				"action": "filter_inNetworks",
+				"args": { "field": "thatIP", "nets": [ "192.168.1.0/24", "fd00::/8" ] },
+				"then": "… NOOP",
+				"else": "… Detect repeated HTTPS failures"
 			}
 		],
 		"… Detect repeated HTTPS failures": [
@@ -366,7 +382,7 @@
 					"^imap-login: Disconnected \\(no auth attempts in [0-9]{2,} secs\\): user=<>, rip=(?P<thatIP>[^,]+),",
 					"^imap-login: Disconnected: Too many invalid commands.*, rip=(?P<thatIP>[^,]+),"
 				] },
-				"then": "… Detect repeated mail failures",
+				"then": "… Do not ban local mail users",
 				"else": "… Detect failed IMAP logins"
 			}
 		],
@@ -388,14 +404,22 @@
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "WARN", "message": "Failed login as {thatUser}@{_HOSTNAME} by IMAP" },
-				"then": "… Detect repeated mail failures"
+				"then": "… Do not ban local mail users"
 			}
 		],
 		"… Report inexisting IMAP user": [
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "INFO", "message": "Failed login as {thatUser}@{_HOSTNAME} by IMAP" },
-				"then": "… Detect repeated mail failures"
+				"then": "… Do not ban local mail users"
+			}
+		],
+		"… Do not ban local mail users": [
+			{
+				"action": "filter_inNetworks",
+				"args": { "field": "thatIP", "nets": [ "192.168.1.0/24", "fd00::/8" ] },
+				"then": "… NOOP",
+				"else": "… Detect repeated mail failures"
 			}
 		],
 		"… Detect repeated mail failures": [
@@ -514,7 +538,7 @@
 					"^.{19} rejected [EH]{2}LO from (?:\\([^)]*\\) )?\\[(?P<thatIP>[^]]+)\\]: syntactically invalid",
 					"\\[(?P<thatIP>[^ ]+)\\] dropped: too many nonmail commands"
 				] },
-				"then": "… Detect repeated mail failures",
+				"then": "… Do not ban local mail users",
 				"else": "… NOOP if PRIORITY 5+"
 			}
 		],
@@ -715,9 +739,9 @@
 			{
 				"filter": "filter_pcreAny",
 				"args": { "field": "MESSAGE", "re": [
-					"^Failed password for (?P<thatUser>.*) from (?P<thatIP>(?!192\\.168\\.1\\.201 )[^ ]*) port",
-					"^Invalid user (?P<thatUser>.*) from (?P<thatIP>(?!192\\.168\\.1\\.201 )[^ ]*) port",
-					"^User (?P<thatUser>.*) from (?P<thatIP>(?!192\\.168\\.1\\.201 )[^ ]*) not allowed because not listed in AllowUsers$"
+					"^Failed password for (?P<thatUser>.*) from (?P<thatIP>[^ ]*) port",
+					"^Invalid user (?P<thatUser>.*) from (?P<thatIP>[^ ]*) port",
+					"^User (?P<thatUser>.*) from (?P<thatIP>[^ ]*) not allowed because not listed in AllowUsers$"
 				] },
 				"else": "… Forbid antiquated clients"
 			},
@@ -733,22 +757,30 @@
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "WARN", "message": "Failed login as {thatUser}@{_HOSTNAME} by SSH" },
-				"then": "… Detect repeated SSH login failures"
+				"then": "… Do not ban local SSH users"
 			}
 		],
 		"… Report inexisting SSH user": [
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "INFO", "message": "Failed login as {thatUser}@{_HOSTNAME} by SSH" },
-				"then": "… Detect repeated SSH login failures"
+				"then": "… Do not ban local SSH users"
 			}
 		],
 		"… Forbid antiquated clients": [
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^Unable to negotiate with ((?!192\\.168\\.1\\.201 )[^ ]*) port", "save": [ "thatIP" ] },
-				"then": "… Detect repeated SSH login failures",
+				"args": { "field": "MESSAGE", "re": "^Unable to negotiate with ([^ ]*) port", "save": [ "thatIP" ] },
+				"then": "… Do not ban local SSH users",
 				"else": "… NOOP if PRIORITY 6+"
+			}
+		],
+		"… Do not ban local SSH users": [
+			{
+				"action": "filter_inNetworks",
+				"args": { "field": "thatIP", "nets": [ "192.168.1.0/24", "fd00::/8" ] },
+				"then": "… NOOP",
+				"else": "… Detect repeated SSH login failures"
 			}
 		],
 		"… Detect repeated SSH login failures": [
