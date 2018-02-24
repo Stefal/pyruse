@@ -11,7 +11,7 @@ class Workflow:
         firstStep = None
         for label in actions:
             if not label in seen:
-                (entryPoint, seen, newDangling) = self._initChain(actions, label, seen)
+                (entryPoint, seen, newDangling) = self._initChain(actions, label, seen, (label,))
                 if firstStep is None:
                     firstStep = entryPoint
                 elif len(dangling) > 0:
@@ -19,11 +19,8 @@ class Workflow:
                         setter(entryPoint)
                 dangling = newDangling
         self.firstStep = firstStep
-        loop = self._checkForLoops()
-        if loop:
-            raise RecursionError("Loop found in actions: %s\n" % loop)
 
-    def _initChain(self, actions, label, seen):
+    def _initChain(self, actions, label, seen, wholeChain):
         dangling = []
         previousSetter = None
         firstStep = None
@@ -38,12 +35,16 @@ class Workflow:
                 obj.setStepName(label + '[' + str(stepNum) + ']')
             if mod.thenRun:
                 (seen, dangling) = \
-                    self._branchToChain(obj.setNextStep, mod.thenRun, actions, seen, dangling)
+                    self._branchToChain(
+                        obj.setNextStep, mod.thenRun, wholeChain,
+                        actions, seen, dangling)
                 isThenCalled = True
             if mod.isFilter:
                 if mod.elseRun:
                     (seen, dangling) = \
-                        self._branchToChain(obj.setAltStep, mod.elseRun, actions, seen, dangling)
+                        self._branchToChain(
+                            obj.setAltStep, mod.elseRun, wholeChain,
+                            actions, seen, dangling)
                 else:
                     dangling.append(obj.setAltStep)
             isPreviousDangling = mod.isFilter and not isThenCalled
@@ -57,35 +58,16 @@ class Workflow:
         seen[label] = firstStep if len(dangling) == 0 else None
         return (firstStep, seen, dangling)
 
-    def _branchToChain(self, parentSetter, branchName, actions, seen, dangling):
-        if branchName in seen and seen[branchName]:
+    def _branchToChain(self, parentSetter, branchName, wholeChain, actions, seen, dangling):
+        if branchName in wholeChain:
+            raise RecursionError("Loop found in actions: %s\n" % str(wholeChain + (branchName,)))
+        elif branchName in seen and seen[branchName] is not None:
             parentSetter(seen[branchName])
         elif branchName in actions:
             (entryPoint, seen, newDangling) = \
-                self._initChain(actions, branchName, seen)
+                self._initChain(actions, branchName, seen, wholeChain + (branchName,))
             parentSetter(entryPoint)
             dangling.extend(newDangling)
         else:
             raise ValueError("Action chain not found: %s\n" % branchName)
         return (seen, dangling)
-
-    def _checkForLoops(self):
-        if self.firstStep is None:
-            return None
-        branches = [(self.firstStep, [], [])]
-        while True:
-            node, branchIds, branch = branches.pop()
-            idNode = id(node)
-            if idNode in branchIds:
-                return branch if self._withDebug else True
-            branchIds.append(idNode)
-            if self._withDebug:
-                branch.append(node.stepName)
-            if isinstance(node, base.Filter) and node.altStep:
-                altBranch = list(branch)
-                altBranchIds = list(branchIds)
-                branches.append((node.altStep, altBranchIds, altBranch))
-            if node.nextStep:
-                branches.append((node.nextStep, branchIds, branch))
-            if len(branches) == 0:
-                return None
