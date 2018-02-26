@@ -27,4 +27,4 @@ For more in-depth documentation, please refer to these pages:
     - [the `action_noop` module](doc/noop.md)
     - [the `action_email` module](doc/action_email.md)
     - [the `action_dailyReport` module](doc/action_dailyReport.md)
-    - [the `action_nftBan` module](doc/action_nftBan.md)
+    - [the `action_nftBan` and `action_log` modules](doc/logandban.md)

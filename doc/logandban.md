@@ -1,4 +1,33 @@
-# Ban IP addresses after they misbehaved
+# Log entries creation, and ban of IP addresses
+
+## Log entries
+
+The main purpose of creating new log entries, is to detect recidives in bad behaviour: after an IP address misbehaves, it gets banned, and we generate a log line for that; such log lines get counted, and eventually trigger a harsher, recidive, ban of the same IP address. Several levels of bans can thus be stacked, up to an unlimited ban, if such is wanted.
+
+Action `action_log` takes a mandatory `message` argument, which is a template for the message to be sent.
+Optionally, the log level can be changed from the default (which is “INFO”) by setting the `level` parameter; valid values are “EMERG”, “ALERT”, “CRIT”, “ERR”, “WARNING”, “NOTICE”, “INFO”, and “DEBUG” (see [Syslog severity levels](https://en.wikipedia.org/wiki/Syslog#Severity_level) for the definitions).
+
+The `message` parameter is a Python [string format](https://docs.python.org/3/library/string.html#formatstrings).
+This means that any key in the current entry may be referrenced by its name between curly braces.
+This also means that literal curly braces must be doubled, lest they are read as the start of a template placeholder.
+
+Here are some examples:
+
+```json
+{
+  "action": "action_log", "args": { "message": "Ban from SSH for {thatIP}." }
+}
+
+{
+  "action": "action_log",
+  "args": {
+    "level": "NOTICE",
+    "message": "Recidive ban from SSH for {thatIP}."
+  }
+}
+```
+
+## Ban IP addresses after they misbehaved
 
 Linux provides a number of firewall solutions: [iptables](http://www.netfilter.org/), its successor [nftables](http://wiki.nftables.org/), and many iptables frontends like [Shorewall](http://www.shorewall.net/) or RedHat’s [firewalld](http://www.firewalld.org/).
 For Pyruse, **nftables** was chosen, because it is modern and light-weight, and provides interesting features.
@@ -59,7 +88,7 @@ Here are examples:
 }
 ```
 
-## List the currently banned addresses
+### List the currently banned addresses
 
 To see what IP addresses are currently banned, here is the `nft` command:
 
@@ -85,7 +114,7 @@ table ip Inet4 {
 
 _Note_: The un-rounded timeouts are post-reboot restored bans.
 
-## Un-ban an IP address
+### Un-ban an IP address
 
 It is bound to happen some day: you will want to un-ban a banned IP address.
 

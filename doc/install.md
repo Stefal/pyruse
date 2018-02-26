@@ -3,7 +3,7 @@
 The software requirements are:
 
 * a modern systemd-based Linux operating system (eg. [Archlinux](https://archlinux.org/)- or [Fedora](https://getfedora.org/)-based distributions);
-* python, at least version 3.1 (or [more, depending on the modules](doc/intro_tech.md) being used);
+* python, at least version 3.4 (or [more, depending on the modules](intro_tech.md) being used);
 * [python-systemd](https://www.freedesktop.org/software/systemd/python-systemd/journal.html);
 * [nftables](http://wiki.nftables.org/) _if_ IP address bans are to be managed;
 * a sendmail-like program _if_ emails are wanted.
