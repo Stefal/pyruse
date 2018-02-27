@@ -38,7 +38,10 @@ class Filter(base.Filter):
         return False
 
     def _toNetAndMask(self, family, bits, net):
-        ip, mask = net.split("/")
+        if "/" in net:
+            ip, mask = net.split("/")
+        else:
+            ip, mask = net, bits
         numericMask = ((1<<int(mask))-1)<<(bits-int(mask))
         numericIP = self._numericIP(family, ip)
         return numericIP & numericMask, numericMask

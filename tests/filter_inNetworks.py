@@ -9,11 +9,17 @@ def whenIp4InNet4ThenTrue():
 def whenIp4NotInNet4ThenFalse():
     assert not Filter({"field": "ip", "nets": ["34.56.78.90/12"]}).filter({"ip": "34.47.255.254"})
 
+def whenIp4ItselfThenTrue():
+    assert Filter({"field": "ip", "nets": ["12.34.56.78"]}).filter({"ip": "12.34.56.78"})
+
 def whenIp6InNet6ThenTrue():
     assert Filter({"field": "ip", "nets": ["2001:db8:1:1a0::/59"]}).filter({"ip": "2001:db8:1:1a0::1"})
 
 def whenIp6NotInNet6ThenFalse():
     assert not Filter({"field": "ip", "nets": ["2001:db8:1:1a0::/59"]}).filter({"ip": "2001:db8:1:19f:ffff:ffff:ffff:fffe"})
+
+def whenIp6ItselfThenTrue():
+    assert Filter({"field": "ip", "nets": ["2001:db8:1:1a0::"]}).filter({"ip": "2001:db8:1:1a0::"})
 
 def whenNumericIp6InNet4ThenFalse():
     assert not Filter({"field": "ip", "nets": ["34.56.78.90/12"]}).filter({"ip": "::2230:1"})
@@ -33,8 +39,10 @@ def whenNoNetworkThenFalse():
 def unitTests():
     whenIp4InNet4ThenTrue()
     whenIp4NotInNet4ThenFalse()
+    whenIp4ItselfThenTrue()
     whenIp6InNet6ThenTrue()
     whenIp6NotInNet6ThenFalse()
+    whenIp6ItselfThenTrue()
     whenNumericIp6InNet4ThenFalse()
     whenNumericIp4InNet6ThenFalse()
     whenIpInOneNetworkThenTrue()

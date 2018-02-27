@@ -35,7 +35,7 @@ class Filter(Step):
             nextStep = self.nextStep if self.filter(entry) else self.altStep
         except Exception as e:
             nextStep = self.altStep
-            log.error("Error while executing %s: %s." % (type(self), str(e)))
+            log.error("Error while executing %s (%s): %s." % (type(self), self.stepName, str(e)))
         return nextStep
 
 class Action(Step):
@@ -52,5 +52,5 @@ class Action(Step):
             nextStep = self.nextStep
         except Exception as e:
             nextStep = None
-            log.error("Error while executing %s: %s." % (type(self), str(e)))
+            log.error("Error while executing %s (%s): %s." % (type(self), self.stepName, str(e)))
         return nextStep
