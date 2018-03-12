@@ -120,7 +120,7 @@
 			},
 			{
 				"action": "action_nftBan",
-				"args": { "IP": "thatIP", "banSeconds": 900, "nftSetIPv4": "Inet4 https_ban", "nftSetIPv6": "Inet6 https_ban" }
+				"args": { "IP": "thatIP", "banSeconds": 900, "nftSetIPv4": "ip Inet4 https_ban", "nftSetIPv6": "ip6 Inet6 https_ban" }
 			}
 		],
 		"… Let Nextcloud core messages pass-through": [
@@ -297,7 +297,7 @@
 			},
 			{
 				"action": "action_nftBan",
-				"args": { "IP": "thatIP", "banSeconds": 7200, "nftSetIPv4": "Inet4 https_ban", "nftSetIPv6": "Inet6 https_ban" }
+				"args": { "IP": "thatIP", "banSeconds": 7200, "nftSetIPv4": "ip Inet4 https_ban", "nftSetIPv6": "ip6 Inet6 https_ban" }
 			}
 		],
 		"… Immediate warning for connectivity errors": [
@@ -438,7 +438,7 @@
 			},
 			{
 				"action": "action_nftBan",
-				"args": { "IP": "thatIP", "banSeconds": 432000, "nftSetIPv4": "Inet4 mail_ban", "nftSetIPv6": "Inet6 mail_ban" }
+				"args": { "IP": "thatIP", "banSeconds": 432000, "nftSetIPv4": "ip Inet4 mail_ban", "nftSetIPv6": "ip6 Inet6 mail_ban" }
 			}
 		],
 		"… Discard Dovecot debug entries": [
@@ -520,7 +520,7 @@
 			},
 			{
 				"action": "action_nftBan",
-				"args": { "IP": "thatIP", "banSeconds": 432000, "nftSetIPv4": "Inet4 mail_ban", "nftSetIPv6": "Inet6 mail_ban" }
+				"args": { "IP": "thatIP", "banSeconds": 432000, "nftSetIPv4": "ip Inet4 mail_ban", "nftSetIPv6": "ip6 Inet6 mail_ban" }
 			}
 		],
 		"… Detect some SMTP spammers": [
@@ -799,7 +799,7 @@
 			},
 			{
 				"action": "action_nftBan",
-				"args": { "IP": "thatIP", "banSeconds": 432000, "nftSetIPv4": "Inet4 sshd_ban", "nftSetIPv6": "Inet6 sshd_ban" }
+				"args": { "IP": "thatIP", "banSeconds": 432000, "nftSetIPv4": "ip Inet4 sshd_ban", "nftSetIPv6": "ip6 Inet6 sshd_ban" }
 			}
 		],
 		"Warn of SpamAssassin update failures": [

@@ -17,45 +17,45 @@ def _clean():
 
 def whenBanIPv4ThenAddToIPv4Set():
     _clean()
-    Action({"IP": "ip", "nftSetIPv4": "I4 ban", "nftSetIPv6": "I6 ban"}).act({"ip": "10.0.0.1"})
+    Action({"IP": "ip", "nftSetIPv4": "ip I4 ban", "nftSetIPv6": "ip6 I6 ban"}).act({"ip": "10.0.0.1"})
     assert os.path.exists(nftBanCmd)
     assert os.path.exists(nftBanState)
     nbLines = 0
     with open(nftBanCmd, "rt") as c:
         for line in c:
-            assert line == "add element I4 ban {10.0.0.1}\n", line
+            assert line == "add element ip I4 ban {10.0.0.1}\n", line
             nbLines += 1
     assert nbLines == 1, nbLines
     nbBans = 0
     with open(nftBanState) as s:
         for ban in json.load(s):
-            assert ban["IP"] == "10.0.0.1" and ban["nftSet"] == "I4 ban", str(ban)
+            assert ban["IP"] == "10.0.0.1" and ban["nftSet"] == "ip I4 ban", str(ban)
             nbBans += 1
     assert nbBans == 1, nbBans
     _clean()
 
 def whenBanIPv6ThenAddToIPv6Set():
     _clean()
-    Action({"IP": "ip", "nftSetIPv4": "I4 ban", "nftSetIPv6": "I6 ban"}).act({"ip": "::1"})
+    Action({"IP": "ip", "nftSetIPv4": "ip I4 ban", "nftSetIPv6": "ip6 I6 ban"}).act({"ip": "::1"})
     assert os.path.exists(nftBanCmd)
     assert os.path.exists(nftBanState)
     nbLines = 0
     with open(nftBanCmd, "rt") as c:
         for line in c:
-            assert line == "add element I6 ban {::1}\n", line
+            assert line == "add element ip6 I6 ban {::1}\n", line
             nbLines += 1
     assert nbLines == 1, nbLines
     nbBans = 0
     with open(nftBanState) as s:
         for ban in json.load(s):
-            assert ban["IP"] == "::1" and ban["nftSet"] == "I6 ban", str(ban)
+            assert ban["IP"] == "::1" and ban["nftSet"] == "ip6 I6 ban", str(ban)
             nbBans += 1
     assert nbBans == 1, nbBans
     _clean()
 
 def whenBanTwoIPThenTwoLinesInState():
     _clean()
-    action = Action({"IP": "ip", "nftSetIPv4": "I4 ban", "nftSetIPv6": "I6 ban"})
+    action = Action({"IP": "ip", "nftSetIPv4": "ip I4 ban", "nftSetIPv6": "ip6 I6 ban"})
     action.act({"ip": "10.0.0.1"})
     action.act({"ip": "::1"})
     action.act({"ip": "10.0.0.1"})
@@ -64,9 +64,9 @@ def whenBanTwoIPThenTwoLinesInState():
     with open(nftBanState) as s:
         for ban in json.load(s):
             if ban["IP"] == "10.0.0.1":
-                assert ban["nftSet"] == "I4 ban", str(ban)
+                assert ban["nftSet"] == "ip I4 ban", str(ban)
             elif ban["IP"] == "::1":
-                assert ban["nftSet"] == "I6 ban", str(ban)
+                assert ban["nftSet"] == "ip6 I6 ban", str(ban)
             else:
                 assert false, str(ban)
             nbBans += 1
@@ -75,7 +75,7 @@ def whenBanTwoIPThenTwoLinesInState():
 
 def whenBanAnewThenNoDuplicate():
     _clean()
-    action = Action({"IP": "ip", "nftSetIPv4": "I4 ban", "nftSetIPv6": "I6 ban"})
+    action = Action({"IP": "ip", "nftSetIPv4": "ip I4 ban", "nftSetIPv6": "ip6 I6 ban"})
     action.act({"ip": "10.0.0.1"})
     action.act({"ip": "10.0.0.1"})
     assert os.path.exists(nftBanCmd)
@@ -85,24 +85,24 @@ def whenBanAnewThenNoDuplicate():
         for line in c:
             lineCount += 1
             if lineCount == 1:
-                assert line == "add element I4 ban {10.0.0.1}\n", line
+                assert line == "add element ip I4 ban {10.0.0.1}\n", line
             elif lineCount == 2:
-                assert line == "delete element I4 ban {10.0.0.1}\n", line
+                assert line == "delete element ip I4 ban {10.0.0.1}\n", line
             elif lineCount == 3:
-                assert line == "add element I4 ban {10.0.0.1}\n", line
+                assert line == "add element ip I4 ban {10.0.0.1}\n", line
     assert lineCount == 3, lineCount
     nbBans = 0
     with open(nftBanState) as s:
         for ban in json.load(s):
             if ban["IP"] == "10.0.0.1":
-                assert ban["nftSet"] == "I4 ban", str(ban)
+                assert ban["nftSet"] == "ip I4 ban", str(ban)
             nbBans += 1
     assert nbBans == 1, nbBans
     _clean()
 
 def whenFinishedBanThenAsIfNotThere():
     _clean()
-    action = Action({"IP": "ip", "nftSetIPv4": "I4 ban", "nftSetIPv6": "I6 ban", "banSeconds": 1})
+    action = Action({"IP": "ip", "nftSetIPv4": "ip I4 ban", "nftSetIPv6": "ip6 I6 ban", "banSeconds": 1})
     action.act({"ip": "10.0.0.1"})
     time.sleep(1)
     action.act({"ip": "10.0.0.1"})
@@ -112,15 +112,15 @@ def whenFinishedBanThenAsIfNotThere():
         for line in c:
             lineCount += 1
             if lineCount == 1:
-                assert line == "add element I4 ban {10.0.0.1 timeout 1s}\n", line
+                assert line == "add element ip I4 ban {10.0.0.1 timeout 1s}\n", line
             elif lineCount == 2:
-                assert line == "add element I4 ban {10.0.0.1 timeout 1s}\n", line
+                assert line == "add element ip I4 ban {10.0.0.1 timeout 1s}\n", line
     assert lineCount == 2, lineCount
     _clean()
 
 def whenUnfinishedBanThenTimeoutReset():
     _clean()
-    action = Action({"IP": "ip", "nftSetIPv4": "I4 ban", "nftSetIPv6": "I6 ban", "banSeconds": 2})
+    action = Action({"IP": "ip", "nftSetIPv4": "ip I4 ban", "nftSetIPv6": "ip6 I6 ban", "banSeconds": 2})
     action.act({"ip": "10.0.0.1"})
     time.sleep(1)
     action.act({"ip": "10.0.0.1"})
@@ -130,11 +130,11 @@ def whenUnfinishedBanThenTimeoutReset():
         for line in c:
             lineCount += 1
             if lineCount == 1:
-                assert line == "add element I4 ban {10.0.0.1 timeout 2s}\n", line
+                assert line == "add element ip I4 ban {10.0.0.1 timeout 2s}\n", line
             elif lineCount == 2:
-                assert line == "delete element I4 ban {10.0.0.1}\n", line
+                assert line == "delete element ip I4 ban {10.0.0.1}\n", line
             elif lineCount == 3:
-                assert line == "add element I4 ban {10.0.0.1 timeout 2s}\n", line
+                assert line == "add element ip I4 ban {10.0.0.1 timeout 2s}\n", line
     assert lineCount == 3, lineCount
     _clean()
 

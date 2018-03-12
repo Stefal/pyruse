@@ -38,6 +38,7 @@ The most interesting [filtering or informational entries](https://www.freedeskto
 
 * `PRIORITY`: see [Syslog at Wikipedia](https://en.wikipedia.org/wiki/Syslog#Severity_level) for the definitions
 * `SYSLOG_FACILITY`: see [Syslog at Wikipedia](https://en.wikipedia.org/wiki/Syslog#Facility) for the definitions
+* `SYSLOG_IDENTIFIER`: short name for the program that produced the log entry (better accuracy than `_SYSTEMD_UNIT`)
 * `_HOSTNAME`: short hostname of the machine where the log entry occurred
 * `_UID`: user ID of the systemd service that produced the log entry
 * `_GID`: group ID of the systemd service that produced the log entry

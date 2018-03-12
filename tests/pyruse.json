@@ -58,7 +58,7 @@
 			},
 			{
 				"action": "action_nftBan",
-				"args": { "IP": "ip", "banSeconds": 100, "nftSetIPv4": "I4 bans", "nftSetIPv6": "I6 bans" },
+				"args": { "IP": "ip", "banSeconds": 100, "nftSetIPv4": "ip I4 bans", "nftSetIPv6": "ip6 I6 bans" },
 				"then": "… finalize after last action"
 			}
 		],

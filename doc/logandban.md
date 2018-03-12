@@ -69,7 +69,7 @@ table ip6 Inet6 {
 }
 ```
 
-Then the values for `nftSetIPv4` and `nftSetIPv6` will be respectively “`Inet4 mail_ban`” and “`Inet6 mail_ban`”.
+Then the values for `nftSetIPv4` and `nftSetIPv6` will be respectively “`ip Inet4 mail_ban`” and “`ip6 Inet6 mail_ban`”.
 
 Optionally, a number may be specified with `banSeconds` to limit the time this ban will last.
 The nice thing with nftables, is that it handles the timeouts itself: no need to keep track of the active bans and remove them using a Python program; the only reason why bans are recorded in a file, is to be able to restore them on reboot.
@@ -79,12 +79,12 @@ Here are examples:
 ```json
 {
   "action": "action_nftBan",
-  "args": { "IP": "thatIP", "banSeconds": 86400, "nftSetIPv4": "Inet4 mail_ban", "nftSetIPv6": "Inet6 mail_ban" }
+  "args": { "IP": "thatIP", "banSeconds": 86400, "nftSetIPv4": "ip Inet4 mail_ban", "nftSetIPv6": "ip6 Inet6 mail_ban" }
 }
 
 {
   "action": "action_nftBan",
-  "args": { "IP": "thatIP", "nftSetIPv4": "Inet4 sshd_ban", "nftSetIPv6": "Inet6 sshd_ban" }
+  "args": { "IP": "thatIP", "nftSetIPv4": "ip Inet4 sshd_ban", "nftSetIPv6": "ip6 Inet6 sshd_ban" }
 }
 ```
 
@@ -93,7 +93,7 @@ Here are examples:
 To see what IP addresses are currently banned, here is the `nft` command:
 
 ```bash
-$ sudo nft 'list set Inet4 mail_ban'
+$ sudo nft 'list set ip Inet4 mail_ban'
 table ip Inet4 {
         set mail_ban {
                 type ipv4_addr
@@ -121,10 +121,34 @@ It is bound to happen some day: you will want to un-ban a banned IP address.
 Since `action_nftBan` does not keep the current bans in memory, it is enough to remove the ban using the `nft` command:
 
 ```bash
-$ sudo nft 'delete element Inet4 mail_ban {10.0.0.10}'
+$ sudo nft 'delete element ip Inet4 mail_ban {10.0.0.10}'
 ```
 
 However, the ban may be restored when restarting Pyruse.
 To avoid that, also delete the corresponding record from the `action_nftBan.py.json` file in Pyruse’s [storage directory](conffile.md).
 
 To go further, you could tweak your configuration, so that your trusted IP addresses never reach `action_nftBan`.
+
+### Manual ban of an IP address
+
+To add a ban yourself, run a command like this:
+
+```bash
+$ sudo nft 'add element ip Inet4 ssh_ban {192.168.1.1 timeout 5d}
+```
+
+The `timeout …` part can be omitted to add a permanent ban. The timeout can be any combination of days (`d`), hours (`h`), minutes (`m`), and seconds (`s`), eg. “`3d31m16s`”.
+
+In order to make the ban persistent across reboots, a corresponding record should also be appended to the `action_nftBan.py.json` file in Pyruse’s [storage directory](conffile.md) (the IP address, nft Set, days, hours, minutes, seconds, and actual path to the file should be adapted to your needs):
+
+* either a time-limited ban:
+
+```bash
+$ sudo sed -i "\$s/.\$/$(date +', {"IP": "192.168.1.1", "nftSet": "ip Inet4 ssh_ban", "timestamp": %s.000000}' -d 'now +3day +31minute +16second')]/" /var/lib/pyruse/action_nftBan.py.json
+```
+
+* or an unlimited ban:
+
+```bash
+$ sudo sed -i '$s/.$/, {"IP": "192.168.1.1", "nftSet": "ip Inet4 ssh_ban", "timestamp": 0}]/' /var/lib/pyruse/action_nftBan.py.json
+```
