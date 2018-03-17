@@ -2,7 +2,7 @@
 
 Everyone knows [Fail2ban](http://www.fail2ban.org/).
 This program is excellent at what it does, which is matching patterns in a number of log files, and keeping track of counters in order to launch actions (ban an IP, send an email…) when thresholds are crossed.
-[Fail2ban is extremely customizable](http://yalis.fr/cms/index.php/post/2014/11/02/Migrate-from-DenyHosts-to-Fail2ban)… to a point; and to my knowledge it cannot benefit from all the features of modern-day logging with systemd.
+[Fail2ban is extremely customizable](http://yalis.fr/cms/index.php/post/2014/11/02/Migrate-from-DenyHosts-to-Fail2ban)… to a point; to my knowledge it cannot benefit from all the features of modern-day logging with systemd.
 
 Then, there is the less-known and aging [Epylog](http://freshmeat.sourceforge.net/projects/epylog/); several programs exist with the same features.
 Just like Fail2ban, this program continuously scans the logs to do pattern matching.

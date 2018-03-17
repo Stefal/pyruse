@@ -20,7 +20,7 @@ def main():
 
     # Unit tests
     import filter_equals, filter_greaterOrEquals, filter_in, filter_inNetworks, filter_lowerOrEquals, filter_pcre, filter_pcreAny, filter_userExists
-    import action_counterRaise, action_counterReset, action_dailyReport, action_dnatCapture, action_dnatReplace, action_email, action_log, action_nftBan
+    import action_counterRaise, action_counterReset, action_dailyReport, action_dnatCapture, action_dnatReplace, action_email, action_ipsetBan, action_log, action_nftBan
 
     filter_equals.unitTests()
     filter_greaterOrEquals.unitTests()
@@ -36,6 +36,7 @@ def main():
     action_dnatCapture.unitTests()
     action_dnatReplace.unitTests()
     action_email.unitTests()
+    action_ipsetBan.unitTests()
     action_log.unitTests()
     action_nftBan.unitTests()
 

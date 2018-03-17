@@ -5,7 +5,7 @@ The software requirements are:
 * a modern systemd-based Linux operating system (eg. [Archlinux](https://archlinux.org/)- or [Fedora](https://getfedora.org/)-based distributions);
 * python, at least version 3.4 (or [more, depending on the modules](intro_tech.md) being used);
 * [python-systemd](https://www.freedesktop.org/software/systemd/python-systemd/journal.html);
-* [nftables](http://wiki.nftables.org/) _if_ IP address bans are to be managed;
+* [nftables](http://wiki.nftables.org/) or [ipset](http://ipset.netfilter.org/) _if_ IP address bans are to be managed;
 * a sendmail-like program _if_ emails are wanted.
 
 Besides, getting the software requires [Git](http://git-scm.com/), and packaging it requires [python-setuptools](http://pypi.python.org/pypi/setuptools).
@@ -45,4 +45,6 @@ To install Pyruse on the system, run these commands as root, in the root directo
 The `package` line is the one that actually alters the system. Until Pyruse is packaged for your operating system, you may want to change this line to `checkinstall package`. [Checkinstall](https://en.wikipedia.org/wiki/CheckInstall) should be able to turn your Pyruse installation into a native Linux package.
 
 Then, to run Pyruse, start (and enable) `pyruse.service`.
+
 If you use nftables bans, you should also start (and enable) `pyruse-boot@action_nftBan.service`.
+Likewise, if you use ipset bans, you should start (and enable) `pyruse-boot@action_ipsetBan.service`.

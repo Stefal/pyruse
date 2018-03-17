@@ -7,7 +7,7 @@
 			},
 			{
 				"filter": "filter_in",
-				"args": { "field": "_SYSTEMD_UNIT", "values": [ "gitea.service", "movim.service", "postgresql.service", "man-db.service", "rpc-statd.service", "rpc-statd-notify.service", "lvm2-monitor.service", "lvm2-pvscan@8:1.service", "lvm2-pvscan@179:2.service", "systemd-resolved.service", "systemd-logind.service", "nfs-server.service", "systemd-networkd.service", "systemd-journald.service", "dbus.service", "nfs-idmapd.service", "slapd.service", "systemd-udevd.service" ] },
+				"args": { "field": "SYSLOG_IDENTIFIER", "values": [ "exportfs", "gitea", "haproxy", "kill", "ldapsearch", "ldapwhoami", "mandb", "mount.davfs", "movim", "msmtp", "postgres", "prosody_auth", "sa-compile", "systemd-fsck", "systemd-gpt-auto-generator", "systemd-logind" ] },
 				"then": "… NOOP"
 			}
 		],
@@ -18,131 +18,23 @@
 			},
 			{
 				"filter": "filter_pcreAny",
-				"args": { "field": "_SYSTEMD_UNIT", "re": [ "^systemd-fsck@" ] },
+				"args": { "field": "SYSLOG_IDENTIFIER", "re": [ "^ansible-" ] },
 				"then": "… NOOP"
-			}
-		],
-		"Notify of unsecured XMPP servers": [
-			{
-				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "prosody.service" }
-			},
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "->(.*) closed: Encrypted server-to-server communication is required but was not offered$", "save": [ "xmppServer" ] },
-				"else": "… NOOP if PRIORITY 3+"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "XMPP server {xmppServer} did not provide a secure connection" }
 			}
 		],
 		"Detect request errors with Nextcloud": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "uwsgi@nextcloud.service" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "uwsgi" }
 			},
 			{
 				"filter": "filter_pcre",
 				"args": { "field": "MESSAGE", "re": "^\\[[^]]+\\] ([^ ]+) .*\\] ([A-Z]+ /[^?]*)(?:\\?.*)? => .*\\(HTTP/1.1 5..\\)", "save": [ "thatIP", "HTTPrequest" ] },
-				"else": "… Discard Nextcloud coding errors"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "IP {thatIP} failed to {HTTPrequest} on Nextcloud" }
-			}
-		],
-		"… Discard Nextcloud coding errors": [
-			{
-				"filter": "filter_in",
-				"args": { "field": "PRIORITY", "values": [ 2, 3 ] },
-				"then": "… NOOP",
-				"else": "… Discard Nextcloud-to-LDAP bind errors"
-			}
-		],
-		"… Discard Nextcloud-to-LDAP bind errors": [
-			{
-				"filter": "filter_equals",
-				"args": { "field": "MESSAGE", "value": "{user_ldap} Bind failed: 49: Invalid credentials" },
-				"then": "… NOOP",
-				"else": "… Detect Nextcloud failed logins"
-			}
-		],
-		"… Detect Nextcloud failed logins": [
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^\\{core\\} Login failed: '(.*)' \\(Remote IP: '(.*)'\\)", "save": [ "thatUser", "thatIP" ] },
-				"else": "… Let Nextcloud core messages pass-through"
-			},
-			{
-				"filter": "filter_userExists",
-				"args": { "field": "thatUser" },
-				"else": "… Report inexisting Nextcloud user"
-			},
-			{
-				"action": "action_email",
-				"args": { "subject": "Pyruse Warning", "message": "WARNING: Failed login as {thatUser}@{_HOSTNAME} on Nextcloud on {__REALTIME_TIMESTAMP}." }
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "Failed login as {thatUser}@{_HOSTNAME} on Nextcloud" },
-				"then": "… Do not ban local Nextcloud users"
-			}
-		],
-		"… Report inexisting Nextcloud user": [
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Failed login as {thatUser}@{_HOSTNAME} on Nextcloud" },
-				"then": "… Do not ban local Nextcloud users"
-			}
-		],
-		"… Do not ban local Nextcloud users": [
-			{
-				"action": "filter_inNetworks",
-				"args": { "field": "thatIP", "nets": [ "192.168.1.0/24", "fd00::/8" ] },
-				"then": "… NOOP",
-				"else": "… Detect repeated Nextcloud login failures"
-			}
-		],
-		"… Detect repeated Nextcloud login failures": [
-			{
-				"action": "action_counterRaise",
-				"args": { "counter": "https", "for": "thatIP", "keepSeconds": 300, "save": "IPfailures" }
-			},
-			{
-				"filter": "filter_greaterOrEquals",
-				"args": { "field": "IPfailures", "value": 6 },
-				"else": "… NOOP"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Ban of IP {thatIP} for HTTP abuse" }
-			},
-			{
-				"action": "action_nftBan",
-				"args": { "IP": "thatIP", "banSeconds": 900, "nftSetIPv4": "ip Inet4 https_ban", "nftSetIPv6": "ip6 Inet6 https_ban" }
-			}
-		],
-		"… Let Nextcloud core messages pass-through": [
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^\\{" },
-				"else": "… Report Nextcloud failed state"
-			}
-		],
-		"… Report Nextcloud failed state": [
-			{
-				"filter": "filter_equals",
-				"args": { "field": "MESSAGE", "value": "uwsgi@nextcloud.service: Unit entered failed state." },
 				"else": "… Report insufficient buffer-size for Nextcloud QUERY_STRING"
 			},
 			{
-				"action": "action_email",
-				"args": { "subject": "Nextcloud crashed", "message": "Service uwsgi@nextcloud.service failed on {_HOSTNAME} on {__REALTIME_TIMESTAMP}." }
-			},
-			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Service uwsgi@nextcloud.service failed on {_HOSTNAME}" }
+				"args": { "level": "INFO", "message": "IP {thatIP} failed to {HTTPrequest} on Nextcloud", "details": "FIRSTLAST" }
 			}
 		],
 		"… Report insufficient buffer-size for Nextcloud QUERY_STRING": [
@@ -156,78 +48,62 @@
 				"args": { "level": "WARN", "message": "Nextcloud query failed because the buffer-size was too low" }
 			}
 		],
-		"Warn of sudo errors": [
+		"Detect successful XMPP logins": [
 			{
-				"filter": "filter_pcre",
-				"args": { "field": "_SYSTEMD_UNIT", "re": "^session-.*\\.scope$" }
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "prosody" }
 			},
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^    (.*) : user NOT in sudoers ;", "save": [ "thatUser" ] },
-				"else": "… Warn of su errors"
-			},
-			{
-				"action": "action_email",
-				"args": { "subject": "SUDO error!", "message": "Sudo error from user {thatUser} on {_HOSTNAME} on {__REALTIME_TIMESTAMP}." }
+				"args": { "field": "MESSAGE", "re": "Authenticated as (.*)$", "save": [ "JID" ] },
+				"else": "… Notify of unsecured XMPP servers"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Sudo error from user {thatUser} on {_HOSTNAME}" }
+				"args": { "level": "INFO", "message": "Login as {JID} by XMPP", "details": "NONE" }
 			}
 		],
-		"… Warn of su errors": [
+		"… Notify of unsecured XMPP servers": [
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^FAILED SU \\([^)]+\\) (.*) on [^ ]+$", "save": [ "thatUser" ] },
-				"else": "… Notify of su logins"
-			},
-			{
-				"action": "action_email",
-				"args": { "subject": "SU error!", "message": "SU error from user {thatUser} on {_HOSTNAME} on {__REALTIME_TIMESTAMP}." }
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "SU error from user {thatUser} on {_HOSTNAME}" }
-			}
-		],
-		"… Notify of su logins": [
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^\\(to (.*)\\) (.*) on [^ ]+$", "save": [ "thatUser", "fromUser" ] },
-				"else": "… Notify of sudo logins"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Login as {thatUser}@{_HOSTNAME} by {fromUser}:su" }
-			}
-		],
-		"… Notify of sudo logins": [
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^pam_unix\\(sudo:session\\): session opened for user (.*) by [^(]*\\(uid=([^)]+)\\)$", "save": [ "thatUser", "fromUID" ] },
-				"else": "… Notify of Nextcloud upgrades"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Login as {thatUser}@{_HOSTNAME} by {fromUID}:sudo" }
-			}
-		],
-		"… Notify of Nextcloud upgrades": [
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^\\{core\\} starting upgrade from (.*) to (.*)$", "save": [ "fromVers", "toVers" ] },
+				"args": { "field": "MESSAGE", "re": "->(.*) closed: Encrypted server-to-server communication is required but was not offered$", "save": [ "xmppServer" ] },
 				"else": "… NOOP if PRIORITY 3+"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Nextcloud upgrade from {fromVers} to {toVers}" }
+				"args": { "level": "INFO", "message": "XMPP server {xmppServer} did not provide a secure connection" }
 			}
 		],
-		"Discard HTTP debug entries": [
+		"Notify of unexpected HTTP disconnections": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "nginx.service" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "nginx" }
 			},
+			{
+				"filter": "filter_pcreAny",
+				"args": { "field": "MESSAGE", "re": [
+					"epoll_wait\\(\\) reported that client prematurely closed connection, so upstream connection is closed too while sending request to upstream, client: (?P<thatIP>[^,]+), server: , request: \"[^ ]+ (?P<urlPrefix>/[^/ \"]*)[^\"]*\"",
+					"client prematurely closed connection while sending to client, client: (?P<thatIP>[^,u][^,]+), server: , request: \"[^ ]+ (?P<urlPrefix>/[^/ \"]*)[^\"]*\""
+				] },
+				"else": "… Warn of CONNECT attempts"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Aborted connection from {thatIP} to {urlPrefix}", "details": "FIRSTLAST" }
+			}
+		],
+		"… Warn of CONNECT attempts": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": ", request: \"CONNECT [^ ]+ HTTP/[^\"]+\"$" },
+				"else": "… Discard other HTTP debug entries"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Nginx detected a CONNECT attempt on {_HOSTNAME}" }
+			}
+		],
+		"… Discard other HTTP debug entries": [
 			{
 				"filter": "filter_greaterOrEquals",
 				"args": { "field": "PRIORITY", "value": 6 },
@@ -246,20 +122,24 @@
 				"args": { "counter": "https", "for": "thatIP", "graceSeconds": 432000 }
 			},
 			{
+				"action": "action_counterReset",
+				"args": { "counter": "https_recidive", "for": "thatIP" }
+			},
+			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Login as {thatUser}@{_HOSTNAME} by HTTPS" }
+				"args": { "level": "INFO", "message": "Login from {thatIP} as {thatUser}@{_HOSTNAME} by HTTPS", "details": "NONE" }
 			}
 		],
 		"… Detect failed HTTPS logins": [
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "Redirect to: https://[^/]*yalis\\.fr/sso/\\?r=(.*), client: (?P<thatIP>.*), server: , request: \"POST /sso/\\?r=\\1 HTTP/1\\.1\", host: \"[^/]*yalis\\.fr\", referrer: \"https://[^/]*yalis\\.fr/sso/\\?r=\\1\"$" },
+				"args": { "field": "MESSAGE", "re": "Redirect to: https://[^/]*/sso/\\?r=(.*), client: (?P<thatIP>.*), server: , request: \"POST /sso/\\?r=\\1 HTTP/1\\.1\", host: \"[^/]*\", referrer: \"https://[^/]*/sso/\\?r=\\1\"$" },
 				"else": "… Detect abnormal HTTP 404 errors"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Failed login on {_HOSTNAME} by HTTPS" },
-				"then": "… Do not ban local HTTP users"
+				"args": { "level": "INFO", "message": "Failed login from {thatIP} on {_HOSTNAME} by HTTPS", "details": "FIRSTLAST" },
+				"then": "… Check network before an HTTPS ban"
 			}
 		],
 		"… Detect abnormal HTTP 404 errors": [
@@ -269,14 +149,14 @@
 					"open\\(\\) \"[^\"]*\\.(?:cgi|php|pl|py|sh)\" failed \\(2: No such file or directory\\), client: (?P<thatIP>[^,]+),",
 					"Unable to open primary script: .*\\.(?:cgi|php|pl|py|sh) \\(No such file or directory[^,]+, client: (?P<thatIP>[^,]+),"
 				] },
-				"then": "… Do not ban local HTTP users",
+				"then": "… Check network before an HTTPS ban",
 				"else": "… Immediate warning for connectivity errors"
 			}
 		],
-		"… Do not ban local HTTP users": [
+		"… Check network before an HTTPS ban": [
 			{
-				"action": "filter_inNetworks",
-				"args": { "field": "thatIP", "nets": [ "192.168.1.0/24", "fd00::/8" ] },
+				"filter": "filter_inNetworks",
+				"args": { "field": "thatIP", "nets": [ "192.168.1.96/29", "127.0.0.0/8", "::1" ] },
 				"then": "… NOOP",
 				"else": "… Detect repeated HTTPS failures"
 			}
@@ -296,6 +176,10 @@
 				"args": { "level": "INFO", "message": "Ban of IP {thatIP} for HTTP abuse" }
 			},
 			{
+				"action": "action_log",
+				"args": { "message": "nftBan from HTTP for {thatIP}" }
+			},
+			{
 				"action": "action_nftBan",
 				"args": { "IP": "thatIP", "banSeconds": 7200, "nftSetIPv4": "ip Inet4 https_ban", "nftSetIPv6": "ip6 Inet6 https_ban" }
 			}
@@ -312,7 +196,7 @@
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Nginx could not connect to {nginxUpstream}" }
+				"args": { "level": "INFO", "message": "Nginx could not connect to {nginxUpstream}", "details": "FIRSTLAST" }
 			}
 		],
 		"… Immediate warning for module version errors": [
@@ -327,7 +211,7 @@
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Nginx could not load module {badModule}" }
+				"args": { "level": "INFO", "message": "Nginx could not load module {badModule}", "details": "FIRSTLAST" }
 			}
 		],
 		"… Immediate warning for LUA errors": [
@@ -342,7 +226,7 @@
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Nginx file {luaFile} ran into error: {luaError}" }
+				"args": { "level": "INFO", "message": "Nginx file {luaFile} ran into error: {luaError}", "details": "FIRSTLAST" }
 			}
 		],
 		"… Warn of upstream HTTP disconnections": [
@@ -353,13 +237,13 @@
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "Nginx got disconnected from {failedUpstream} on request {failedRequest}" }
+				"args": { "level": "WARN", "message": "Nginx got disconnected from {failedUpstream} on request {failedRequest}", "details": "FIRSTLAST" }
 			}
 		],
 		"Detect successful IMAP logins": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "dovecot.service" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "dovecot" }
 			},
 			{
 				"filter": "filter_pcre",
@@ -371,8 +255,12 @@
 				"args": { "counter": "mail", "for": "thatIP", "graceSeconds": 432000 }
 			},
 			{
+				"action": "action_counterReset",
+				"args": { "counter": "mail_recidive", "for": "thatIP" }
+			},
+			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Login as {thatUser}@{_HOSTNAME} by IMAP" }
+				"args": { "level": "INFO", "message": "Login from {thatIP} as {thatUser}@{_HOSTNAME} by IMAP", "details": "NONE" }
 			}
 		],
 		"… Detect IMAP resource hogs": [
@@ -382,7 +270,7 @@
 					"^imap-login: Disconnected \\(no auth attempts in [0-9]{2,} secs\\): user=<>, rip=(?P<thatIP>[^,]+),",
 					"^imap-login: Disconnected: Too many invalid commands.*, rip=(?P<thatIP>[^,]+),"
 				] },
-				"then": "… Do not ban local mail users",
+				"then": "… Check network before an email ban",
 				"else": "… Detect failed IMAP logins"
 			}
 		],
@@ -399,25 +287,25 @@
 			},
 			{
 				"action": "action_email",
-				"args": { "subject": "Pyruse Warning", "message": "WARNING: Failed login as {thatUser}@{_HOSTNAME} by IMAP on {__REALTIME_TIMESTAMP}." }
+				"args": { "subject": "Pyruse Warning", "message": "WARNING: Failed login from {thatIP} as {thatUser}@{_HOSTNAME} by IMAP on {__REALTIME_TIMESTAMP}." }
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "Failed login as {thatUser}@{_HOSTNAME} by IMAP" },
-				"then": "… Do not ban local mail users"
+				"args": { "level": "WARN", "message": "Failed login from {thatIP} as {thatUser}@{_HOSTNAME} by IMAP", "details": "FIRSTLAST" },
+				"then": "… Check network before an email ban"
 			}
 		],
 		"… Report inexisting IMAP user": [
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Failed login as {thatUser}@{_HOSTNAME} by IMAP" },
-				"then": "… Do not ban local mail users"
+				"args": { "level": "INFO", "message": "Failed login from {thatIP} as {thatUser}@{_HOSTNAME} by IMAP", "details": "FIRSTLAST" },
+				"then": "… Check network before an email ban"
 			}
 		],
-		"… Do not ban local mail users": [
+		"… Check network before an email ban": [
 			{
-				"action": "filter_inNetworks",
-				"args": { "field": "thatIP", "nets": [ "192.168.1.0/24", "fd00::/8" ] },
+				"filter": "filter_inNetworks",
+				"args": { "field": "thatIP", "nets": [ "192.168.1.96/29", "127.0.0.0/8", "::1" ] },
 				"then": "… NOOP",
 				"else": "… Detect repeated mail failures"
 			}
@@ -435,6 +323,10 @@
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "INFO", "message": "Ban of IP {thatIP} for mail abuse" }
+			},
+			{
+				"action": "action_log",
+				"args": { "message": "nftBan from email for {thatIP}" }
 			},
 			{
 				"action": "action_nftBan",
@@ -457,26 +349,37 @@
 			},
 			{
 				"action": "action_email",
-				"args": { "subject": "Dovecot-to-LDAP error", "message": "Dovecot could connect to LDAP (ldapi) on {__REALTIME_TIMESTAMP}." }
+				"args": { "subject": "Dovecot-to-LDAP error", "message": "Dovecot could not connect to LDAP (ldapi) on {__REALTIME_TIMESTAMP}." }
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Dovecot could connect to LDAP (ldapi)" }
+				"args": { "level": "INFO", "message": "Dovecot could not connect to LDAP (ldapi)", "details": "FIRSTLAST" }
 			}
 		],
 		"Notify of Exim smarthost deliveries": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "exim.service" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "exim" }
 			},
 			{
 				"filter": "filter_pcre",
 				"args": { "field": "MESSAGE", "re": " => [^ ]+ R=smarthost T=remote_smtp H=([^ ]+ \\[[^]]+\\]) C=\"250 ", "save": [ "smarthost" ] },
+				"else": "… Notify of Exim local deliveries"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Email message sent through {smarthost}", "details": "NONE" }
+			}
+		],
+		"… Notify of Exim local deliveries": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "> [^ ]+ Saved\"$" },
 				"else": "… Frozen Exim email"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Email message sent through {smarthost}" }
+				"args": { "level": "INFO", "message": "Local email message delivered", "details": "NONE" }
 			}
 		],
 		"… Frozen Exim email": [
@@ -487,7 +390,7 @@
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Frozen email on {_HOSTNAME}." }
+				"args": { "level": "INFO", "message": "Frozen email on {_HOSTNAME}.", "details": "FIRSTLAST" }
 			}
 		],
 		"… Warn of a failure for Exim": [
@@ -505,22 +408,37 @@
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Exim detected a failure ({failReason})" }
+				"args": { "level": "INFO", "message": "Exim detected a failure ({failReason})", "details": "FIRSTLAST" }
 			}
 		],
 		"… Immediate ban of crackers": [
 			{
 				"filter": "filter_pcre",
 				"args": { "field": "MESSAGE", "re": "\\[([^ ]+)\\] NULL character\\(s\\) present \\(shown as '\\?'\\)$", "save": [ "thatIP" ] },
-				"else": "… Detect some SMTP spammers"
+				"else": "… Some leniency to allow for manual SMTP"
 			},
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "INFO", "message": "Ban of IP {thatIP} for mail abuse" }
 			},
 			{
+				"action": "action_log",
+				"args": { "message": "nftBan from email for {thatIP}" }
+			},
+			{
 				"action": "action_nftBan",
 				"args": { "IP": "thatIP", "banSeconds": 432000, "nftSetIPv4": "ip Inet4 mail_ban", "nftSetIPv6": "ip6 Inet6 mail_ban" }
+			}
+		],
+		"… Some leniency to allow for manual SMTP": [
+			{
+				"filter": "filter_pcreAny",
+				"args": { "field": "MESSAGE", "re": [
+					"^.{19} SMTP syntax error in \"[^\"]*\" H=(?:\\([^)]*\\) )?\\[(?P<thatIP>[^]]+)\\]",
+					"SMTP command timeout on connection from (?:\\([^)]*\\) )?\\[(?P<thatIP>[^]]+)\\]$"
+				] },
+				"then": "… Check network before an email ban",
+				"else": "… Detect some SMTP spammers"
 			}
 		],
 		"… Detect some SMTP spammers": [
@@ -538,14 +456,14 @@
 					"^.{19} rejected [EH]{2}LO from (?:\\([^)]*\\) )?\\[(?P<thatIP>[^]]+)\\]: syntactically invalid",
 					"\\[(?P<thatIP>[^ ]+)\\] dropped: too many nonmail commands"
 				] },
-				"then": "… Do not ban local mail users",
+				"then": "… Check network before an email ban",
 				"else": "… NOOP if PRIORITY 5+"
 			}
 		],
 		"Notify of new custom systemd services": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "init.scope" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "systemd" }
 			},
 			{
 				"filter": "filter_pcre",
@@ -561,36 +479,58 @@
 			{
 				"filter": "filter_pcre",
 				"args": { "field": "MESSAGE", "re": "^Directory (/.*) to mount over is not empty, mounting anyway\\.$", "save": [ "mountPath" ] },
-				"else": "… Warn of time-outs"
+				"else": "… Notify of systemd-gpt-auto-generator errors"
 			},
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "WARN", "message": "Device mounted on non-empty {mountPath}" }
 			}
 		],
+		"… Notify of systemd-gpt-auto-generator errors": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "MESSAGE", "value": "/usr/lib/systemd/system-generators/systemd-gpt-auto-generator failed with error code 1." },
+				"else": "… Warn of time-outs"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "{MESSAGE}", "details": "NONE" }
+			}
+		],
 		"… Warn of time-outs": [
 			{
 				"filter": "filter_pcre",
 				"args": { "field": "MESSAGE", "re": "^(/.*): Start operation timed out\\. Terminating\\.$", "save": [ "systemdUnit" ] },
-				"else": "… Warn of failed mounts"
+				"else": "… Notify of user logins"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "Unit {systemdUnit} timed out while starting" }
+				"args": { "level": "WARN", "message": "Unit {systemdUnit}/{_HOSTNAME} timed out while starting" }
 			}
 		],
-		"… Warn of failed mounts": [
+		"… Notify of user logins": [
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^(/.*\\.mount): Failed ", "save": [ "mountUnit" ] },
-				"else": "… Discard other init.scope debug entries"
+				"args": { "field": "MESSAGE", "re": "^pam_unix\\(systemd-user:session\\): session opened for user (.*) by root\\(uid=0\\)$", "save": [ "thatUser" ] },
+				"else": "… Warn of failed systemd units"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "Unit {mountUnit} failed to mount" }
+				"args": { "level": "INFO", "message": "Login as {thatUser}@{_HOSTNAME} by systemd-user:session" }
 			}
 		],
-		"… Discard other init.scope debug entries": [
+		"… Warn of failed systemd units": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^(/.*\\.mount|.*\\.service): Failed ", "save": [ "systemdUnit" ] },
+				"else": "… Discard other systemd debug entries"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "Unit {systemdUnit}/{_HOSTNAME} failed" }
+			}
+		],
+		"… Discard other systemd debug entries": [
 			{
 				"filter": "filter_greaterOrEquals",
 				"args": { "field": "PRIORITY", "value": 4 },
@@ -608,107 +548,137 @@
 				"args": { "level": "INFO", "message": "{MESSAGE}" }
 			}
 		],
-		"Warn of Nextcloud maintenance errors": [
+		"Warn of su errors": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "nextcloud-maintenance.service" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "su" }
 			},
 			{
-				"filter": "filter_equals",
-				"args": { "field": "MESSAGE", "value": "Cannot write into \"config\" directory!" },
-				"else": "… NOOP if PRIORITY 5+"
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^FAILED SU \\([^)]+\\) (.*) on [^ ]+$", "save": [ "thatUser" ] },
+				"else": "… Notify of su logins"
 			},
 			{
 				"action": "action_email",
-				"args": { "subject": "Nextcloud config is read-only!", "message": "Nextcloud maintenance could not write to the configuration file on {__REALTIME_TIMESTAMP}." }
+				"args": { "subject": "SU error!", "message": "SU error from user {thatUser} on {_HOSTNAME} on {__REALTIME_TIMESTAMP}." }
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Nextcloud maintenance could not write to the configuration file" }
+				"args": { "level": "INFO", "message": "SU error from user {thatUser} on {_HOSTNAME}" }
 			}
 		],
-		"Detect HAProxy problems": [
+		"… Notify of su logins": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^\\(to (.*)\\) (.*) on [^ ]+$", "save": [ "thatUser", "fromUser" ] },
+				"else": "… NOOP if PRIORITY 5+"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Login as {thatUser}@{_HOSTNAME} by {fromUser}:su", "details": "NONE" }
+			}
+		],
+		"Discard Nextcloud coding errors": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "haproxy.service" },
-				"then": "… NOOP if PRIORITY 5+"
-			}
-		],
-		"Notify of user logins": [
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "_SYSTEMD_UNIT", "re": "^user@" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "ownCloud" }
 			},
 			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "session opened for user (.*) by root\\(uid=0\\)$", "save": [ "thatUser" ] },
-				"else": "… NOOP if PRIORITY 4+"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Login as {thatUser}@{_HOSTNAME} by systemd-user:session" }
+				"filter": "filter_in",
+				"args": { "field": "PRIORITY", "values": [ 2, 3 ] },
+				"then": "… NOOP",
+				"else": "… Discard Nextcloud-to-LDAP bind errors"
 			}
 		],
-		"Warn of minidlna errors while reading media files": [
+		"… Discard Nextcloud-to-LDAP bind errors": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "minidlna.service" }
-			},
+				"args": { "field": "MESSAGE", "value": "{user_ldap} Bind failed: 49: Invalid credentials" },
+				"then": "… NOOP",
+				"else": "… Notify of Nextcloud upgrades"
+			}
+		],
+		"… Notify of Nextcloud upgrades": [
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^metadata\\.c:.*Opening (.*) failed! \\[", "save": [ "torrentName" ] },
-				"else": "… Notify of unhandled formats"
+				"args": { "field": "MESSAGE", "re": "^\\{core\\} starting upgrade from (.*) to (.*)$", "save": [ "fromVers", "toVers" ] },
+				"else": "… Detect Nextcloud failed logins"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "Minidlna error for {torrentName}" }
+				"args": { "level": "INFO", "message": "Nextcloud upgrade from {fromVers} to {toVers}" }
 			}
 		],
-		"… Notify of unhandled formats": [
+		"… Detect Nextcloud failed logins": [
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^metadata\\.c:[0-9]+: warn: (.*): Unhandled format: (.*)$", "save": [ "torrentName", "mediaFormat" ] },
-				"else": "… Warn of permission errors for minidlna"
+				"args": { "field": "MESSAGE", "re": "^\\{core\\} Login failed: '(.*)' \\(Remote IP: '(.*)'\\)", "save": [ "thatUser", "thatIP" ] },
+				"else": "… Let Nextcloud core messages pass-through"
+			},
+			{
+				"filter": "filter_userExists",
+				"args": { "field": "thatUser" },
+				"else": "… Report inexisting Nextcloud user"
+			},
+			{
+				"action": "action_email",
+				"args": { "subject": "Pyruse Warning", "message": "WARNING: Failed login from {thatIP} as {thatUser}@{_HOSTNAME} on Nextcloud on {__REALTIME_TIMESTAMP}." }
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Minidlna does not handle {mediaFormat} for {torrentName}" }
+				"args": { "level": "WARN", "message": "Failed login from {thatIP} as {thatUser}@{_HOSTNAME} on Nextcloud", "details": "FIRSTLAST" },
+				"then": "… Check network before a Nextcloud ban"
 			}
 		],
-		"… Warn of permission errors for minidlna": [
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^monitor\\.c:[0-9]+: error: inotify_add_watch\\((.*)\\) \\[Permission non accordée\\]$", "save": [ "torrentName" ] },
-				"else": "… NOOP if PRIORITY 4+"
-			},
+		"… Report inexisting Nextcloud user": [
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "Minidlna is not allowed to read {torrentName}" }
+				"args": { "level": "INFO", "message": "Failed login from {thatIP} as {thatUser}@{_HOSTNAME} on Nextcloud", "details": "FIRSTLAST" },
+				"then": "… Check network before a Nextcloud ban"
 			}
 		],
-		"Warn of package errors with loolwsd": [
+		"… Check network before a Nextcloud ban": [
 			{
-				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "loolwsd.service" }
+				"filter": "filter_inNetworks",
+				"args": { "field": "thatIP", "nets": [ "192.168.1.96/29", "127.0.0.0/8", "::1" ] },
+				"then": "… NOOP",
+				"else": "… Detect repeated Nextcloud login failures"
+			}
+		],
+		"… Detect repeated Nextcloud login failures": [
+			{
+				"action": "action_counterRaise",
+				"args": { "counter": "https", "for": "thatIP", "keepSeconds": 300, "save": "IPfailures" }
 			},
 			{
-				"filter": "filter_pcreAny",
-				"args": { "field": "MESSAGE", "re": [
-					"^/usr/bin/loolwsd: error ",
-					"^FATAL:",
-					"^Failed "
-				] },
+				"filter": "filter_greaterOrEquals",
+				"args": { "field": "IPfailures", "value": 6 },
 				"else": "… NOOP"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "CollaboraOnline: {MESSAGE}" }
+				"args": { "level": "INFO", "message": "Ban of IP {thatIP} for HTTP abuse" }
+			},
+			{
+				"action": "action_log",
+				"args": { "message": "nftBan from HTTP for {thatIP}" }
+			},
+			{
+				"action": "action_nftBan",
+				"args": { "IP": "thatIP", "banSeconds": 900, "nftSetIPv4": "ip Inet4 https_ban", "nftSetIPv6": "ip6 Inet6 https_ban" }
+			}
+		],
+		"… Let Nextcloud core messages pass-through": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^\\{" },
+				"else": "… NOOP if PRIORITY 5+"
 			}
 		],
 		"Warn of bad SSH configuration": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "sshd.service" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "sshd" }
 			},
 			{
 				"filter": "filter_pcre",
@@ -717,13 +687,13 @@
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "SSH: {MESSAGE}" }
+				"args": { "level": "WARN", "message": "SSH: {MESSAGE}", "details": "FIRSTLAST" }
 			}
 		],
 		"… Detect successful SSH logins": [
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^Accepted (?:password|publickey) for (.*) from ([^ ]*) port ", "save": [ "thatUser", "thatIP" ] },
+				"args": { "field": "MESSAGE", "re": "^Accepted (password|publickey) for (.*) from ([^ ]*) port ", "save": [ "SSHmethod", "thatUser", "thatIP" ] },
 				"else": "… Detect failed SSH logins"
 			},
 			{
@@ -731,8 +701,12 @@
 				"args": { "counter": "sshd", "for": "thatIP", "graceSeconds": 432000 }
 			},
 			{
+				"action": "action_counterReset",
+				"args": { "counter": "sshd_recidive", "for": "thatIP" }
+			},
+			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Login as {thatUser}@{_HOSTNAME} by SSH" }
+				"args": { "level": "INFO", "message": "Login from {thatIP} as {thatUser}@{_HOSTNAME} by SSH {SSHmethod}" }
 			}
 		],
 		"… Detect failed SSH logins": [
@@ -752,33 +726,33 @@
 			},
 			{
 				"action": "action_email",
-				"args": { "subject": "Pyruse Warning", "message": "WARNING: Failed login as {thatUser}@{_HOSTNAME} by SSH on {__REALTIME_TIMESTAMP}." }
+				"args": { "subject": "Pyruse Warning", "message": "WARNING: Failed login from {thatIP} as {thatUser}@{_HOSTNAME} by SSH on {__REALTIME_TIMESTAMP}." }
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "Failed login as {thatUser}@{_HOSTNAME} by SSH" },
-				"then": "… Do not ban local SSH users"
+				"args": { "level": "WARN", "message": "Failed login from {thatIP} as {thatUser}@{_HOSTNAME} by SSH", "details": "FIRSTLAST" },
+				"then": "… Check network before an SSH ban"
 			}
 		],
 		"… Report inexisting SSH user": [
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Failed login as {thatUser}@{_HOSTNAME} by SSH" },
-				"then": "… Do not ban local SSH users"
+				"args": { "level": "INFO", "message": "Failed login from {thatIP} as {thatUser}@{_HOSTNAME} by SSH", "details": "FIRSTLAST" },
+				"then": "… Check network before an SSH ban"
 			}
 		],
 		"… Forbid antiquated clients": [
 			{
 				"filter": "filter_pcre",
 				"args": { "field": "MESSAGE", "re": "^Unable to negotiate with ([^ ]*) port", "save": [ "thatIP" ] },
-				"then": "… Do not ban local SSH users",
+				"then": "… Check network before an SSH ban",
 				"else": "… NOOP if PRIORITY 6+"
 			}
 		],
-		"… Do not ban local SSH users": [
+		"… Check network before an SSH ban": [
 			{
-				"action": "filter_inNetworks",
-				"args": { "field": "thatIP", "nets": [ "192.168.1.0/24", "fd00::/8" ] },
+				"filter": "filter_inNetworks",
+				"args": { "field": "thatIP", "nets": [ "192.168.1.96/29", "127.0.0.0/8", "::1" ] },
 				"then": "… NOOP",
 				"else": "… Detect repeated SSH login failures"
 			}
@@ -798,66 +772,221 @@
 				"args": { "level": "INFO", "message": "Ban of IP {thatIP} for SSH abuse" }
 			},
 			{
+				"action": "action_log",
+				"args": { "message": "nftBan from SSH for {thatIP}" }
+			},
+			{
 				"action": "action_nftBan",
 				"args": { "IP": "thatIP", "banSeconds": 432000, "nftSetIPv4": "ip Inet4 sshd_ban", "nftSetIPv6": "ip6 Inet6 sshd_ban" }
 			}
 		],
-		"Warn of SpamAssassin update failures": [
+		"Notify of identified SPAM messages": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "spamassassin-update.service" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "spamd" }
 			},
 			{
-				"filter": "filter_equals",
-				"args": { "field": "MESSAGE", "value": "channel: could not find working mirror, channel failed" },
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^spamd: identified spam" },
 				"else": "… NOOP if PRIORITY 4+"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "SpamAssassin update failed" }
+				"args": { "level": "INFO", "message": "Spam identified", "details": "NONE" }
 			}
 		],
-		"Warn of systemd-nspawn failures": [
+		"Manage recidives for Pyruse bans from HTTPS": [
 			{
-				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "systemd-nspawn@seuil3.service" }
+				"filter": "filter_in",
+				"args": { "field": "SYSLOG_IDENTIFIER", "values": [ "python", "pyruse" ] }
 			},
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^(?:\\[FAILED\\] )?Failed to" },
+				"args": { "field": "MESSAGE", "re": "^nftBan from HTTP for (?P<thatIP>.*)$" },
+				"else": "… Manage recidives for Pyruse bans from email"
+			},
+			{
+				"action": "action_counterRaise",
+				"args": { "counter": "https_recidive", "for": "thatIP", "keepSeconds": 432000, "save": "IPfailures" }
+			},
+			{
+				"filter": "filter_greaterOrEquals",
+				"args": { "field": "IPfailures", "value": 7 },
+				"else": "… NOOP"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Ban of IP {thatIP} for repeated HTTP abuse" }
+			},
+			{
+				"action": "action_log",
+				"args": { "message": "Strong nftBan from HTTP for {thatIP}", "level": "WARNING" }
+			},
+			{
+				"action": "action_nftBan",
+				"args": { "IP": "thatIP", "banSeconds": 2592000, "nftSetIPv4": "ip Inet4 https_ban", "nftSetIPv6": "ip6 Inet6 https_ban" }
+			}
+		],
+		"… Manage recidives for Pyruse bans from email": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^nftBan from email for (?P<thatIP>.*)$" },
+				"else": "… Manage recidives for Pyruse bans from SSH"
+			},
+			{
+				"action": "action_counterRaise",
+				"args": { "counter": "mail_recidive", "for": "thatIP", "keepSeconds": 2592000, "save": "IPfailures" }
+			},
+			{
+				"filter": "filter_greaterOrEquals",
+				"args": { "field": "IPfailures", "value": 7 },
+				"else": "… NOOP"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Ban of IP {thatIP} for repeated mail abuse" }
+			},
+			{
+				"action": "action_log",
+				"args": { "message": "Strong nftBan from email for {thatIP}", "level": "WARNING" }
+			},
+			{
+				"action": "action_nftBan",
+				"args": { "IP": "thatIP", "banSeconds": 2592000, "nftSetIPv4": "ip Inet4 mail_ban", "nftSetIPv6": "ip6 Inet6 mail_ban" }
+			}
+		],
+		"… Manage recidives for Pyruse bans from SSH": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^nftBan from SSH for (?P<thatIP>.*)$" }
+			},
+			{
+				"action": "action_counterRaise",
+				"args": { "counter": "sshd_recidive", "for": "thatIP", "keepSeconds": 2592000, "save": "IPfailures" }
+			},
+			{
+				"filter": "filter_greaterOrEquals",
+				"args": { "field": "IPfailures", "value": 2 },
+				"else": "… NOOP"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Ban of IP {thatIP} for repeated SSH abuse" }
+			},
+			{
+				"action": "action_log",
+				"args": { "message": "Strong nftBan from SSH for {thatIP}", "level": "WARNING" }
+			},
+			{
+				"action": "action_nftBan",
+				"args": { "IP": "thatIP", "banSeconds": 2592000, "nftSetIPv4": "ip Inet4 sshd_ban", "nftSetIPv6": "ip6 Inet6 sshd_ban" }
+			}
+		],
+		"Notify of NFS access by clients": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "rpc.mountd" }
+			},
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^authenticated mount request from (.*):[0-9]+ for (.*) \\(.*\\)$", "save": [ "nfsClient", "nfsPath" ] },
+				"else": "… NOOP if PRIORITY 5+"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "NFS access from {nfsClient} to {nfsPath}", "details": "NONE" }
+			}
+		],
+		"Warn of minidlna errors while reading media files": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "minidlnad" }
+			},
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^metadata\\.c:.*Opening (.*) failed! \\[", "save": [ "fileName" ] },
+				"else": "… Notify of unhandled formats"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "Minidlna error for {fileName}" }
+			}
+		],
+		"… Notify of unhandled formats": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^metadata\\.c:[0-9]+: warn: (.*): Unhandled format: (.*)$", "save": [ "fileName", "mediaFormat" ] },
+				"else": "… Warn of permission errors for minidlna"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Minidlna does not handle {mediaFormat} for {fileName}", "details": "NONE" }
+			}
+		],
+		"… Warn of permission errors for minidlna": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^monitor\\.c:[0-9]+: error: inotify_add_watch\\((.*)\\) \\[Permission non accordée\\]$", "save": [ "fileName" ] },
 				"else": "… NOOP if PRIORITY 4+"
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "seuil3: {MESSAGE}" }
+				"args": { "level": "WARN", "message": "Minidlna is not allowed to read {fileName}", "details": "FIRSTLAST" }
 			}
 		],
-		"Warn of local authentication errors": [
+		"Warn of sudo errors": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "nslcd.service" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "sudo" }
 			},
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^\\[[^]]+\\] <([^>]+)> .*Can't contact LDAP server: (.*)$", "save": [ "nslcdClient", "nslcdError" ] },
-				"else": "… NOOP if PRIORITY 3+"
+				"args": { "field": "MESSAGE", "re": "^    (.*) : user NOT in sudoers ;", "save": [ "thatUser" ] },
+				"else": "… Notify of sudo logins"
+			},
+			{
+				"action": "action_email",
+				"args": { "subject": "SUDO error!", "message": "Sudo error from user {thatUser} on {_HOSTNAME} on {__REALTIME_TIMESTAMP}." }
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "nslcd: {nslcdError} for {nslcdClient}@{_HOSTNAME}" }
+				"args": { "level": "INFO", "message": "Sudo error from user {thatUser} on {_HOSTNAME}" }
 			}
 		],
-		"Discard useless nfs-mountd entries": [
+		"… Notify of sudo logins": [
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^pam_unix\\(sudo:session\\): session opened for user (.*) by [^(]*\\(uid=([^)]+)\\)$", "save": [ "thatUser", "fromUID" ] },
+				"else": "… NOOP if PRIORITY 5+"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Login as {thatUser}@{_HOSTNAME} by {fromUID}:sudo", "details": "NONE" }
+			}
+		],
+		"Warn of package errors with loolwsd": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "nfs-mountd.service" },
-				"then": "… NOOP if PRIORITY 5+"
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "loolwsd" }
+			},
+			{
+				"filter": "filter_pcreAny",
+				"args": { "field": "MESSAGE", "re": [
+					"^/usr/bin/loolwsd: error ",
+					"^FATAL:",
+					"^Failed "
+				] },
+				"else": "… NOOP"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "CollaboraOnline: {MESSAGE}" }
 			}
 		],
 		"Notify of certificate renewals": [
 			{
 				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "dehydrated.service" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "dehydrated" }
 			},
 			{
 				"filter": "filter_pcre",
@@ -877,120 +1006,99 @@
 			},
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "ACME: {MESSAGE}" }
+				"args": { "level": "WARN", "message": "ACME: {MESSAGE}", "details": "FIRSTLAST" }
+			}
+		],
+		"Warn of SpamAssassin update failures": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "sa-update" }
+			},
+			{
+				"filter": "filter_equals",
+				"args": { "field": "MESSAGE", "value": "channel: could not find working mirror, channel failed" },
+				"else": "… NOOP if PRIORITY 4+"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "SpamAssassin update failed", "details": "FIRSTLAST" }
+			}
+		],
+		"Warn of local authentication errors": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "nslcd" }
+			},
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^\\[[^]]+\\] <([^>]+)> .*Can't contact LDAP server: (.*)$", "save": [ "nslcdClient", "nslcdError" ] },
+				"else": "… NOOP if PRIORITY 3+"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "nslcd: {nslcdError} for {nslcdClient}@{_HOSTNAME}", "details": "FIRSTLAST" }
+			}
+		],
+		"Warn of Nextcloud maintenance errors": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "php" }
+			},
+			{
+				"filter": "filter_equals",
+				"args": { "field": "MESSAGE", "value": "Cannot write into \"config\" directory!" },
+				"else": "… NOOP if PRIORITY 5+"
+			},
+			{
+				"action": "action_email",
+				"args": { "subject": "Nextcloud config is read-only!", "message": "Nextcloud maintenance could not write to the configuration file on {__REALTIME_TIMESTAMP}." }
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Nextcloud maintenance could not write to the configuration file", "details": "FIRSTLAST" }
+			}
+		],
+		"Warn of systemd-nspawn failures": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "systemd-nspawn" }
+			},
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^(?:\\[FAILED\\] )?Failed to" },
+				"else": "… NOOP if PRIORITY 4+"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "nspawn: {MESSAGE}", "details": "FIRSTLAST" }
+			}
+		],
+		"Discard ddclient debug entries": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "ddclient" },
+				"then": "… NOOP if PRIORITY 6+"
 			}
 		],
 		"Warn of core dumps": [
 			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "systemd-coredump" }
+			},
+			{
 				"filter": "filter_pcre",
 				"args": { "field": "MESSAGE", "re": "of user (.*) dumped core\\.$", "save": [ "thatUser" ] },
-				"else": "… Discard other coredump entries"
+				"else": "… NOOP"
 			},
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "WARN", "message": "Core dump for {thatUser}@{_HOSTNAME}" }
 			}
 		],
-		"… Discard other coredump entries": [
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "_SYSTEMD_UNIT", "re": "^systemd-coredump@" },
-				"then": "… NOOP"
-			}
-		],
-		"Discard ddclient debug entries": [
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "_SYSTEMD_UNIT", "re": "^ddclient@" },
-				"then": "… NOOP if PRIORITY 6+"
-			}
-		],
-		"Notify of important PHP debug messages": [
-			{
-				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "php-fpm.service" }
-			},
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^\\[[A-Z](?!OTICE)(?!EBUG)" },
-				"else": "… Notify of PHP error messages"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "PHP: {MESSAGE}" }
-			}
-		],
-		"… Notify of PHP error messages": [
-			{
-				"filter": "filter_lowerOrEquals",
-				"args": { "field": "PRIORITY", "value": 3 },
-				"else": "… NOOP"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "WARN", "message": "PHP: {MESSAGE}" }
-			}
-		],
-		"Notify of bad torrents": [
-			{
-				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "transmission.service" }
-			},
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^\\[.{23}\\] (.*[^:]) (?:Scrape error: )?Could not connect to tracker", "save": [ "torrentName" ] },
-				"else": "… Warn of Transmission errors"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Transmission could not connect to tracker for {torrentName}" }
-			}
-		],
-		"… Warn of Transmission errors": [
-			{
-				"filter": "filter_pcreAny",
-				"args": { "field": "MESSAGE", "re": [
-					"(?P<errMsg>All nameservers have failed) \\([^():]+:[0-9]+\\)$",
-					"(?P<errMsg>No such file or directory) \\([^():]+:[0-9]+\\)$",
-					"(?P<errMsg>Too many open files) \\([^():]+:[0-9]+\\)$",
-					"(?P<errMsg>Permission denied) \\([^():]+:[0-9]+\\)$"
-				] },
-				"else": "… Filter-out uninteresting Transmission events"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Transmission error: {errMsg}" }
-			}
-		],
-		"… Filter-out uninteresting Transmission events": [
-			{
-				"filter": "filter_pcreAny",
-				"args": { "field": "MESSAGE", "re": [
-					"^\\[.{23}\\] (?:Bound socket|Cache Maximum cache size set to|RPC Server (?:Adding|Serving|Started|Stopped)|DHT (?:Bootstrapping|Finished bootstrapping|DHT initialized|Initializing|Reusing|Done uninitializing DHT|Saving|Not saving nodes|Uninitializing)|Port Forwarding Stopped|Saved \"|Using settings from|Watching \"|Searching for web interface file \"|Deleting input \\.torrent file|Parsing \\.torrent file successful|watchdir Callback decided to accept|Changed open file limit|(?:SO_RCVBUF|SO_SNDBUF) size is|Closing libevent|Loaded [0-9]+ torrent|watchdir Callback decided|Nameserver |Preallocated file \"|UDP Couldn't parse UDP tracker packet)",
-					"(?:Queued for verification|bytes per second\\)|[vV]erifying torrent\\.*|Announcing to tracker|Retrying (?:announce|scrape) in [0-9]+ seconds\\.|seconds from now\\.|Got [0-9]+ peers from tracker|checking just-completed piece [0-9]+|Starting IPv4 DHT announce \\([^)]+\\)|IPv4 peers from DHT|Pausing|Removing torrent|started|peers from resume file|\\.resume\"|files marked for download|Requested download is not authorized for use with this tracker\\.|Connection failed|\\(No Response\\)|(?:State changed from|moving) \"[^\"]+\" to \"[^\"]+\"|DHT announce done|failed its checksum test|403 \\(Forbidden\\)|404 \\(Not Found\\)|Tracker did not respond) \\([^():]+:[0-9]+\\)$"
-				] },
-				"then": "… NOOP"
-			}
-		],
-		"Notify of identified SPAM messages": [
-			{
-				"filter": "filter_equals",
-				"args": { "field": "_SYSTEMD_UNIT", "value": "spamassassin.service" }
-			},
-			{
-				"filter": "filter_pcre",
-				"args": { "field": "MESSAGE", "re": "^spamd: identified spam" },
-				"else": "… NOOP if PRIORITY 4+"
-			},
-			{
-				"action": "action_dailyReport",
-				"args": { "level": "INFO", "message": "Spam identified" }
-			}
-		],
 		"Notify of getty user logins": [
 			{
 				"filter": "filter_pcre",
-				"args": { "field": "_SYSTEMD_UNIT", "re": "^getty@" }
+				"args": { "field": "SYSLOG_IDENTIFIER", "re": "login" }
 			},
 			{
 				"filter": "filter_pcre",
@@ -1015,6 +1123,32 @@
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "INFO", "message": "Failed getty login on {_HOSTNAME}" }
+			}
+		],
+		"Notify of important PHP debug messages": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "php-fpm" }
+			},
+			{
+				"filter": "filter_pcre",
+				"args": { "field": "MESSAGE", "re": "^\\[[A-Z](?!OTICE)(?!EBUG)" },
+				"else": "… Notify of PHP error messages"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "PHP: {MESSAGE}", "details": "FIRSTLAST" }
+			}
+		],
+		"… Notify of PHP error messages": [
+			{
+				"filter": "filter_lowerOrEquals",
+				"args": { "field": "PRIORITY", "value": 3 },
+				"else": "… NOOP"
+			},
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "PHP: {MESSAGE}", "details": "FIRSTLAST" }
 			}
 		],
 		"… NOOP if PRIORITY 3+": [
@@ -1053,7 +1187,7 @@
 		"all_filters_failed": [
 			{
 				"action": "action_dailyReport",
-				"args": { "level": "OTHER", "message": "[{PRIORITY}/{SYSLOG_IDENTIFIER}] {_UID}:{_GID}@{_HOSTNAME}:{_CMDLINE} ({_SYSTEMD_UNIT})\n    {MESSAGE}" }
+				"args": { "level": "OTHER", "message": "[{PRIORITY}/{SYSLOG_IDENTIFIER}] {_UID}:{_GID}@{_HOSTNAME}:{_CMDLINE} ({_SYSTEMD_UNIT})\n{MESSAGE}" }
 			}
 		]
 	},
@@ -1067,6 +1201,9 @@
 	},
 	"nftBan": {
 		"nft": [ "/usr/bin/nft" ]
+	},
+	"ipsetBan": {
+		"ipset": [ "/usr/bin/ipset", "-exist", "-quiet" ]
 	},
 	"8bit-message-encoding": "iso-8859-15",
 	"storage": "/var/lib/pyruse",

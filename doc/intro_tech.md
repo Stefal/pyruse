@@ -31,8 +31,10 @@ Pyruse is split into several Python files:
 * `workflow.py`: This is where the configuration file get translated into actual execution chains, linked together into a single static workflow.
 * `module.py`: Whenever the workflow needs to add a filter or an action to an execution chain, this module finds it in the filesystem.
 * `base.py`: All actions and filters inherit from the `Action` and `Filter` classes defined in there; they act as an abstraction layer between the workflow and the modules.
-* `counter.py`: This utility class is parent to modules that manage a counter (Python supports multiple-inheritance).
-* `email.py`: This utility class is parent to modules that send emails (Python supports multiple-inheritance).
+* `ban.py`: This utility class is parent to modules that ban IP addresses using [Netfilter](https://netfilter.org/) (Python supports multiple-inheritance).
+* `counter.py`: This utility class is parent to modules that manage a counter.
+* `dnat.py`: This file contains utility parent classes for actions that try and restore the actual client IP addresses.
+* `email.py`: This utility class is parent to modules that send emails.
 
 All else is actions and filters…
 Some are delivered with Pyruse itself; [more can be added](customize.md).

@@ -1,11 +1,15 @@
 #!/bin/bash
-# $1 (optional): systemd-nspawn machine name
+# $1 (optional): grouping criteria: SYSLOG_IDENTIFIER (default) or _SYSTEMD_UNIT
+# $+ (optional): journalctl options (-M machine, -S date…)
+
+CRIT=${1:-SYSLOG_IDENTIFIER}
+shift
 
 {
-	printf 'Units\tTotal\tP7\tP6\tP5\tP4\tP3\tP2\tP1\tP0\n'
-	sudo journalctl ${1:+-M "$1"} -o json-pretty --output-fields=_SYSTEMD_UNIT,PRIORITY \
+	printf '%s\tTotal\tP7\tP6\tP5\tP4\tP3\tP2\tP1\tP0\n' $CRIT
+	sudo journalctl "$@" -o json-pretty --output-fields=${CRIT},PRIORITY \
 	| tr -d $'"\t, ' \
-	| awk -F: -vOFS=: '
+	| awk -F: -vOFS=: -vCRIT=$CRIT '
 		/^\{/ {
 			u = ""
 			p = -1
@@ -13,7 +17,7 @@
 		$1 == "PRIORITY" {
 			p = $2
 		}
-		$1 == "_SYSTEMD_UNIT" {
+		$1 == CRIT {
 			u = gensub(\
 				"@.*(\\.[^.]*)$",\
 				"@*\\1",\

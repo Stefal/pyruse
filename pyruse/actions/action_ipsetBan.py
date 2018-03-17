@@ -8,15 +8,15 @@ from pyruse import ban, base, config
 class Action(base.Action, ban.NetfilterBan):
     _storage = config.Config().asMap().get("storage", "/var/lib/pyruse") \
         + "/" + os.path.basename(__file__) + ".json"
-    _nft = config.Config().asMap().get("nftBan", {}).get("nft", ["/usr/bin/nft"])
+    _ipset = config.Config().asMap().get("ipsetBan", {}).get("ipset", ["/usr/bin/ipset", "-exist", "-quiet"])
 
     def __init__(self, args):
         base.Action.__init__(self)
         ban.NetfilterBan.__init__(self, Action._storage)
         if args is None:
             return # on-boot configuration
-        ipv4Set = args["nftSetIPv4"]
-        ipv6Set = args["nftSetIPv6"]
+        ipv4Set = args["ipSetIPv4"]
+        ipv6Set = args["ipSetIPv6"]
         field = args["IP"]
         banSeconds = args.get("banSeconds", None)
         self.initSelf(ipv4Set, ipv6Set, field, banSeconds)
@@ -25,15 +25,13 @@ class Action(base.Action, ban.NetfilterBan):
         ban.NetfilterBan.act(self, entry)
 
     def setBan(self, nfSet, ip, seconds):
-        if seconds == 0:
-            timeout = ""
-        else:
-            timeout = " timeout %ss" % seconds
-        cmd = list(Action._nft)
-        cmd.append("add element %s {%s%s}" % (nfSet, ip, timeout))
+        cmd = list(Action._ipset)
+        cmd.extend(["add", nfSet, ip])
+        if seconds > 0:
+            cmd.extend(["timeout", str(seconds)])
         subprocess.run(cmd)
 
     def cancelBan(self, nfSet, ip):
-        cmd = list(Action._nft)
-        cmd.append("delete element %s {%s}" % (nfSet, ip))
+        cmd = list(Action._ipset)
+        cmd.extend(["del", nfSet, ip])
         subprocess.run(cmd)

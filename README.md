@@ -27,6 +27,8 @@ For example, to my knowledge, there is no equivalent in any tool of the same sca
 Pyruse is [packaged for Archlinux](https://aur.archlinux.org/packages/pyruse/).
 For other distributions, please [read the manual installation instructions](doc/install.md).
 
+Whenever your upgrade Pyruse, make sure to check the [Changelog](Changelog.md).
+
 ## Configuration
 
 The `/etc/pyruse` directory is where system-specific files are looked-for:
@@ -47,7 +49,7 @@ For more in-depth documentation, please refer to these pages:
     - [the built-in filters](doc/builtinfilters.md)
     - [the counter-based actions](doc/counters.md)
     - [the DNAT-related actions](doc/dnat.md)
+    - [the actions that log and ban](doc/logandban.md)
     - [the `action_noop` module](doc/noop.md)
     - [the `action_email` module](doc/action_email.md)
     - [the `action_dailyReport` module](doc/action_dailyReport.md)
-    - [the `action_nftBan` and `action_log` modules](doc/logandban.md)

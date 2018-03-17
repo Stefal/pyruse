@@ -4,7 +4,7 @@
 
 Pyruse provides two actions, namely `action_dnatCapture` and `action_dnatReplace`, that work together towards a single goal: giving to Pyruse’s filters and actions the illusion that client connections come directly to the examined services, instead of going through a firewall Network Address Translation or a reverse-proxy.
 
-If for example you run a Prosody XMPP server (or anything that does not handle the [PROXY protocol](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)) behind an HAProxy reverse-proxy, or if all your network connections go through a NAT’ing proxy in your DMZ, then the following happens: the services report your proxy as being the client, ie. usually `127.0.0.1` (same machine) or your LAN’s gateway IP.
+If for example you run a Prosody XMPP server (or anything that does not handle the [PROXY protocol](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)) behind an HAProxy reverse-proxy, or if all your network connections go through a NAT’ing router in your DMZ, then the following happens: the services report your proxy as being the client, ie. usually `127.0.0.1` (same machine) or your LAN’s router IP.
 
 Here is a simplified illustration of the network configuration:
 

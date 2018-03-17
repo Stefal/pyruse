@@ -87,5 +87,8 @@
 	"nftBan": {
 		"nft": [ "/bin/sh", "-c", "echo \"$0\" >>\"nftBan.cmd\"" ]
 	},
+	"ipsetBan": {
+		"ipset": [ "/bin/sh", "-c", "echo \"$0 $*\" >>\"ipsetBan.cmd\"" ]
+	},
 	"storage": "."
 }

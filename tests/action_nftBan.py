@@ -29,7 +29,7 @@ def whenBanIPv4ThenAddToIPv4Set():
     nbBans = 0
     with open(nftBanState) as s:
         for ban in json.load(s):
-            assert ban["IP"] == "10.0.0.1" and ban["nftSet"] == "ip I4 ban", str(ban)
+            assert ban["IP"] == "10.0.0.1" and ban["nfSet"] == "ip I4 ban", str(ban)
             nbBans += 1
     assert nbBans == 1, nbBans
     _clean()
@@ -48,7 +48,7 @@ def whenBanIPv6ThenAddToIPv6Set():
     nbBans = 0
     with open(nftBanState) as s:
         for ban in json.load(s):
-            assert ban["IP"] == "::1" and ban["nftSet"] == "ip6 I6 ban", str(ban)
+            assert ban["IP"] == "::1" and ban["nfSet"] == "ip6 I6 ban", str(ban)
             nbBans += 1
     assert nbBans == 1, nbBans
     _clean()
@@ -64,9 +64,9 @@ def whenBanTwoIPThenTwoLinesInState():
     with open(nftBanState) as s:
         for ban in json.load(s):
             if ban["IP"] == "10.0.0.1":
-                assert ban["nftSet"] == "ip I4 ban", str(ban)
+                assert ban["nfSet"] == "ip I4 ban", str(ban)
             elif ban["IP"] == "::1":
-                assert ban["nftSet"] == "ip6 I6 ban", str(ban)
+                assert ban["nfSet"] == "ip6 I6 ban", str(ban)
             else:
                 assert false, str(ban)
             nbBans += 1
@@ -95,7 +95,7 @@ def whenBanAnewThenNoDuplicate():
     with open(nftBanState) as s:
         for ban in json.load(s):
             if ban["IP"] == "10.0.0.1":
-                assert ban["nftSet"] == "ip I4 ban", str(ban)
+                assert ban["nfSet"] == "ip I4 ban", str(ban)
             nbBans += 1
     assert nbBans == 1, nbBans
     _clean()
