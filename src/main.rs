@@ -1,8 +1,6 @@
-mod actions;
-mod common;
-mod config;
-mod filters;
-mod modules;
+mod domain;
+mod service;
+mod infra;
 
 fn main() {
   println!("Hello, world!");

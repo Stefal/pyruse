@@ -1,15 +1,10 @@
-use crate::modules::{Action,AvailableAction,ModuleArgs};
-use crate::common::Record;
+use crate::domain::{Action, ModuleArgs, Record};
 
 #[derive(Debug)]
 pub struct Noop {}
 
-inventory::submit! {
-  AvailableAction::new("action_noop", move |a| Box::new(Noop::from_args(a)))
-}
-
 impl Noop {
-  pub fn from_args(mut _args: ModuleArgs) -> Noop {
+  pub fn from_args(_args: ModuleArgs) -> Noop {
     Noop {}
   }
 }
@@ -22,12 +17,11 @@ impl Action for Noop {
 
 #[cfg(test)]
 mod tests {
+  use crate::domain::action::Noop;
+  use crate::domain::{Action, ModuleArgs, Record};
   use std::collections::HashMap;
-  use crate::common::Record;
-  use crate::actions::Noop;
-  use crate::modules::{Action,ModuleArgs};
 
-  fn generate_empty_args_record() -> (ModuleArgs, Record<'static>) {
+  fn generate_empty_args_record() -> (ModuleArgs, Record) {
     let args = HashMap::with_capacity(0);
     let record = HashMap::with_capacity(0);
     (args, record)
@@ -35,8 +29,11 @@ mod tests {
 
   #[test]
   fn noop_does_nothing() {
+    // Given
     let (args, mut record) = generate_empty_args_record();
     let action = Noop::from_args(args);
+
+    // Then
     assert_eq!((), action.act(&mut record).unwrap());
   }
 }
