@@ -3,7 +3,7 @@ use indexmap::IndexMap;
 use std::collections::HashMap;
 
 pub trait ConfigPort {
-  fn get(&self) -> &Config;
+  fn get(&mut self) -> &mut Config;
 }
 
 pub struct Config {

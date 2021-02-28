@@ -1,11 +1,5 @@
-use chrono::DateTime;
-use std::collections::HashMap;
-
 pub mod action;
 pub mod filter;
-
-#[cfg(test)]
-mod test_util;
 
 mod config;
 pub use self::config::*;
@@ -16,7 +10,10 @@ pub use self::module::*;
 mod workflow;
 pub use self::workflow::*;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+use chrono::DateTime;
+use std::collections::HashMap;
+
+#[derive(Clone, Eq, PartialEq)]
 pub enum Value {
   Bool(bool),
   Str(String),
@@ -27,3 +24,6 @@ pub enum Value {
 }
 
 pub type Record = HashMap<String, Value>;
+
+#[cfg(test)]
+mod test_util;

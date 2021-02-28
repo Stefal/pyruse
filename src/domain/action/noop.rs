@@ -1,6 +1,5 @@
 use crate::domain::{Action, ModuleArgs, Record};
 
-#[derive(Debug)]
 pub struct Noop {}
 
 impl Noop {
@@ -10,7 +9,7 @@ impl Noop {
 }
 
 impl Action for Noop {
-  fn act(&self, _record: &mut Record) -> Result<(), ()> {
+  fn act(&mut self, _record: &mut Record) -> Result<(), ()> {
     Ok(())
   }
 }
@@ -31,7 +30,7 @@ mod tests {
   fn noop_does_nothing() {
     // Given
     let (args, mut record) = generate_empty_args_record();
-    let action = Noop::from_args(args);
+    let mut action = Noop::from_args(args);
 
     // Then
     assert_eq!((), action.act(&mut record).unwrap());

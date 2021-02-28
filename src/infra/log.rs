@@ -23,8 +23,8 @@ pub struct SystemdLogAdapter {
   mappers: HashMap<String, JournalFieldMapper>,
 }
 
-impl LogPort for SystemdLogAdapter {
-  fn open() -> Result<Self, ()> {
+impl SystemdLogAdapter {
+  pub fn open() -> Result<Self, ()> {
     let mappers = create_mappers();
     if let Ok(mut journal) = OpenOptions::default()
       .system(true)
@@ -38,7 +38,9 @@ impl LogPort for SystemdLogAdapter {
     }
     Err(())
   }
+}
 
+impl LogPort for SystemdLogAdapter {
   fn read_next(&mut self) -> Result<Record, ()> {
     loop {
       match self.journal.await_next_entry(None) {

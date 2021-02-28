@@ -1,8 +1,7 @@
-use crate::domain::{Config, Module, ModulesPort, Record, Step};
+use crate::domain::{Config, Module, Modules, Record, Step};
 use std::collections::HashMap;
 use std::ops::Add;
 
-#[derive(Debug)]
 struct Node {
   name: String,
   module: Module,
@@ -11,7 +10,7 @@ struct Node {
 }
 
 impl Node {
-  fn run(&self, record: &mut Record) -> isize {
+  fn run(&mut self, record: &mut Record) -> isize {
     if let Ok(b) = self.module.run(record) {
       if b {
         self.then_dest
@@ -29,7 +28,7 @@ pub struct Workflow {
 }
 
 impl Workflow {
-  pub fn run(&self, record: &mut Record) {
+  pub fn run(&mut self, record: &mut Record) {
     let mut i = 0 as isize;
     while {
       i = self.nodes[i as usize].run(record);
@@ -37,7 +36,7 @@ impl Workflow {
     } {}
   }
 
-  pub fn build(conf: &mut Config, available: &dyn ModulesPort) -> Workflow {
+  pub fn build(conf: &mut Config, available: &Modules) -> Workflow {
     let mut seen: Vec<String> = Vec::new();
     let mut nodes: Vec<Node> = Vec::new();
     let mut dangling: DanglingInfo = HashMap::new();
@@ -83,7 +82,7 @@ fn build_chain(
   nodes: &mut Vec<Node>,
   seen: &mut Vec<String>,
   dangling: &mut DanglingInfo,
-  available: &dyn ModulesPort,
+  available: &Modules,
 ) {
   let mut index = 0;
   for step in chain {
@@ -165,7 +164,7 @@ fn node_wants_chain(
 #[cfg(test)]
 mod tests {
   use crate::domain::test_util::*;
-  use crate::domain::{AvailableAction, AvailableFilter, Chain, Config, Record, Step, Value, Workflow};
+  use crate::domain::{Chain, Config, Modules, Record, Step, Value, Workflow};
   use indexmap::IndexMap;
   use std::collections::HashMap;
 
@@ -177,7 +176,7 @@ mod tests {
       actions: IndexMap::new(),
       options: HashMap::new(),
     };
-    let mods = FakeModulesAdapter::new(&[], &[]);
+    let mods = Modules::new();
 
     // When
     let _wf = Workflow::build(&mut conf, &mods);
@@ -200,15 +199,12 @@ mod tests {
       actions,
       options: HashMap::new(),
     };
-    let aa = [AvailableAction {
-      name: ACT_NAME.to_string(),
-      cons: |_| Box::new(FakeAction {}),
-    }];
-    let mods = FakeModulesAdapter::new(&aa, &[]);
+    let mut mods = Modules::new();
+    mods.register_action(ACT_NAME.to_string(), Box::new(|_| Box::new(FakeAction {})));
     let mut record: Record = HashMap::new();
 
     // When
-    let wf = Workflow::build(&mut conf, &mods);
+    let mut wf = Workflow::build(&mut conf, &mods);
     wf.run(&mut record);
 
     // Then
@@ -246,19 +242,13 @@ mod tests {
       actions,
       options: HashMap::new(),
     };
-    let aa = [AvailableAction {
-      name: ACT_NAME.to_string(),
-      cons: |_| Box::new(FakeAction {}),
-    }];
-    let af = [AvailableFilter {
-      name: FLT_NAME.to_string(),
-      cons: |_| Box::new(FakeFilter {}),
-    }];
-    let mods = FakeModulesAdapter::new(&aa, &af);
+    let mut mods = Modules::new();
+    mods.register_action(ACT_NAME.to_string(), Box::new(|_| Box::new(FakeAction {})));
+    mods.register_filter(FLT_NAME.to_string(), Box::new(|_| Box::new(FakeFilter {})));
     let mut record: Record = HashMap::new();
 
     // When
-    let wf = Workflow::build(&mut conf, &mods);
+    let mut wf = Workflow::build(&mut conf, &mods);
     wf.run(&mut record);
 
     // Then
@@ -299,19 +289,13 @@ mod tests {
       actions,
       options: HashMap::new(),
     };
-    let aa = [AvailableAction {
-      name: ACT_NAME.to_string(),
-      cons: |_| Box::new(FakeAction {}),
-    }];
-    let af = [AvailableFilter {
-      name: FLT_NAME.to_string(),
-      cons: |_| Box::new(FakeFilter {}),
-    }];
-    let mods = FakeModulesAdapter::new(&aa, &af);
+    let mut mods = Modules::new();
+    mods.register_action(ACT_NAME.to_string(), Box::new(|_| Box::new(FakeAction {})));
+    mods.register_filter(FLT_NAME.to_string(), Box::new(|_| Box::new(FakeFilter {})));
     let mut record: Record = HashMap::new();
 
     // When
-    let wf = Workflow::build(&mut conf, &mods);
+    let mut wf = Workflow::build(&mut conf, &mods);
     wf.run(&mut record);
 
     // Then

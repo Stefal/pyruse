@@ -1,6 +1,5 @@
 use crate::domain::Record;
 
-#[derive(Debug)]
 pub enum LogMessage<'t> {
   EMERG(&'t str),
   ALERT(&'t str),
@@ -12,8 +11,7 @@ pub enum LogMessage<'t> {
   DEBUG(&'t str),
 }
 
-pub trait LogPort: Sized {
-  fn open() -> Result<Self, ()>;
+pub trait LogPort {
   fn read_next(&mut self) -> Result<Record, ()>;
   fn write(&mut self, message: LogMessage) -> Result<(), ()>;
 }

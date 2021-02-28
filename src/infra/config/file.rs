@@ -3,7 +3,7 @@ use std::env;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const ENV_VARIABLE: &'static str = "PYRUSE_CONF";
 const ETC_PATH: &'static str = "/etc/pyruse";
@@ -48,7 +48,16 @@ fn find_candidates() -> Vec<ConfFile> {
       }
     }
     None => {
+      let cwd = env::current_dir().expect("Error accessing the current working directory");
+      let add_file: fn(&PathBuf, &str) -> OsString = |c, f| {
+        let mut c2 = c.clone();
+        c2.push(f); // not a fluent API…
+        c2.into_os_string()
+      };
       vec![
+        ConfFile::Json(add_file(&cwd, "pyruse.yml")),
+        ConfFile::Yaml(add_file(&cwd, "pyruse.yaml")),
+        ConfFile::Yaml(add_file(&cwd, "pyruse.yml")),
         ConfFile::Json(OsString::from(format!("{}/{}", ETC_PATH, "pyruse.json"))),
         ConfFile::Yaml(OsString::from(format!("{}/{}", ETC_PATH, "pyruse.yaml"))),
         ConfFile::Yaml(OsString::from(format!("{}/{}", ETC_PATH, "pyruse.yml"))),

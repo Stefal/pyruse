@@ -9,8 +9,9 @@ use std::fmt;
 use std::io::Read;
 
 mod file;
+pub use self::file::*;
 
-struct SerdeConfigAdapter {
+pub struct SerdeConfigAdapter {
   config: Config,
 }
 
@@ -20,7 +21,7 @@ impl SerdeConfigAdapter {
       serde_json::from_reader(data).expect("Failed to parse configuration");
     SerdeConfigAdapter::from_serde(serde_config)
   }
-  fn from_yaml(data: impl Read) -> SerdeConfigAdapter {
+  pub fn from_yaml(data: impl Read) -> SerdeConfigAdapter {
     let serde_config: SerdeConfig =
       serde_yaml::from_reader(data).expect("Failed to parse configuration");
     SerdeConfigAdapter::from_serde(serde_config)
@@ -57,13 +58,13 @@ impl SerdeConfigAdapter {
 }
 
 impl ConfigPort for SerdeConfigAdapter {
-  fn get(&self) -> &Config {
-    &self.config
+  fn get(&mut self) -> &mut Config {
+    &mut self.config
   }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct SerdeConfig {
+#[derive(Deserialize)]
+struct SerdeConfig {
   actions: IndexMap<String, SerdeChain>,
 
   #[serde(flatten)]
@@ -72,16 +73,16 @@ pub struct SerdeConfig {
 
 type SerdeChain = Vec<SerdeStep>;
 
-#[derive(Debug, Deserialize, Eq, PartialEq)]
-pub enum StepType {
+#[derive(Deserialize, Eq, PartialEq)]
+enum StepType {
   #[serde(rename(deserialize = "action"))]
   Action(String),
   #[serde(rename(deserialize = "filter"))]
   Filter(String),
 }
 
-#[derive(Debug, Deserialize)]
-pub struct SerdeStep {
+#[derive(Deserialize)]
+struct SerdeStep {
   #[serde(flatten)]
   module: StepType,
   args: ModuleArgs,
