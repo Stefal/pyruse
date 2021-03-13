@@ -1,5 +1,5 @@
 use crate::domain::{LogMessage, LogPort, Record, Value};
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use systemd::journal::{print, Journal, OpenOptions};
@@ -13,7 +13,7 @@ const INT_MAPPER: JournalFieldMapper = |s| {
     .unwrap_or(Value::Str(s))
 };
 const DATE_MAPPER: JournalFieldMapper = |s| {
-  s.parse::<DateTime<chrono::Utc>>()
+  s.parse::<DateTime<Utc>>()
     .map(|d| Value::Date(d))
     .unwrap_or(Value::Str(s))
 };

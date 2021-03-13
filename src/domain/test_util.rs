@@ -1,4 +1,5 @@
-use crate::domain::{Action, Filter, LogMessage, LogPort, Record, Value};
+use crate::domain::{Action, CounterData, CounterRef, CountersPort, Filter, LogMessage, LogPort, Record, Singleton, Value};
+use std::collections::HashMap;
 
 pub const ACT_NAME: &str = "fake_action";
 pub const FLT_NAME: &str = "fake_filter";
@@ -64,5 +65,30 @@ impl LogPort for FakeLog {
       LogMessage::DEBUG(m) => Some(("DEBUG".to_string(), m.to_string())),
     };
     Ok(())
+  }
+}
+
+pub struct FakeCountersAdapter {
+  pub counters: Singleton<HashMap<(String, Value), CounterData>>,
+}
+impl CountersPort for FakeCountersAdapter {
+  fn modify(
+    &mut self,
+    entry: CounterRef,
+    data: CounterData,
+    mut f: impl FnMut(&mut CounterData, CounterData) -> usize,
+  ) -> usize {
+    let k = (entry.0.to_string(), entry.1.clone());
+    if !singleton_borrow!(self.counters).contains_key(&k) {
+      singleton_borrow!(self.counters).insert(k.clone(), (0, None));
+    }
+    f(singleton_borrow!(self.counters).get_mut(&k).unwrap(), data)
+  }
+  fn remove(&mut self, entry: CounterRef) -> Option<CounterData> {
+    let k = (entry.0.to_string(), entry.1.clone());
+    singleton_borrow!(self.counters).remove(&k)
+  }
+  fn remove_if(&mut self, predicate: impl Fn(&CounterData) -> bool) {
+    singleton_borrow!(self.counters).retain(|_, v| !predicate(v));
   }
 }

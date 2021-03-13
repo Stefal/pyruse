@@ -324,14 +324,20 @@ mod tests {
     let conf = SerdeConfigAdapter::from_json(json).config;
 
     // Then
-    assert!(conf.actions.len() == 2);
-    assert!(conf.actions.get_index(0).unwrap().0 == "Detect request errors with Nextcloud");
-    assert!(
-      conf.actions.get_index(1).unwrap().0
-        == "… Report insufficient buffer-size for Nextcloud QUERY_STRING"
+    assert_eq!(conf.actions.len(), 2);
+    assert_eq!(
+      conf.actions.get_index(0).unwrap().0,
+      "Detect request errors with Nextcloud"
     );
-    assert!(conf.actions.get_index(0).unwrap().1.len() == 3);
-    assert!(conf.actions.get_index(0).unwrap().1[1].module == String::from("filter_pcre"));
-    assert!(conf.options.get("debug") == Some(&Value::Bool(false)));
+    assert_eq!(
+      conf.actions.get_index(1).unwrap().0,
+      "… Report insufficient buffer-size for Nextcloud QUERY_STRING"
+    );
+    assert_eq!(conf.actions.get_index(0).unwrap().1.len(), 3);
+    assert_eq!(
+      conf.actions.get_index(0).unwrap().1[1].module,
+      String::from("filter_pcre")
+    );
+    assert_eq!(conf.options.get("debug"), Some(&Value::Bool(false)));
   }
 }

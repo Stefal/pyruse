@@ -163,7 +163,7 @@ fn node_wants_chain(
 
 #[cfg(test)]
 mod tests {
-  use crate::domain::test_util::*;
+  use crate::domain::test_util::{FakeAction, FakeFilter, ACT_NAME, FLT_NAME};
   use crate::domain::{Chain, Config, Modules, Record, Step, Value, Workflow};
   use indexmap::IndexMap;
   use std::collections::HashMap;
@@ -208,12 +208,12 @@ mod tests {
     wf.run(&mut record);
 
     // Then
-    assert!(wf.nodes.len() == 1);
-    assert!(wf.nodes[0].name == "chain1[0]:fake_action");
+    assert_eq!(wf.nodes.len(), 1);
+    assert_eq!(wf.nodes[0].name, "chain1[0]:fake_action");
     assert!(wf.nodes[0].then_dest < 0);
     assert!(wf.nodes[0].else_dest < 0);
-    assert!(record[ACT_NAME] == Value::Int(1));
-    assert!(record.get(FLT_NAME) == None);
+    assert_eq!(record[ACT_NAME], Value::Int(1));
+    assert_eq!(record.get(FLT_NAME), None);
   }
 
   #[test]
@@ -252,15 +252,15 @@ mod tests {
     wf.run(&mut record);
 
     // Then
-    assert!(wf.nodes.len() == 2);
-    assert!(wf.nodes[0].name == "chain1[0]:fake_filter");
-    assert!(wf.nodes[1].name == "chain2[0]:fake_action");
+    assert_eq!(wf.nodes.len(), 2);
+    assert_eq!(wf.nodes[0].name, "chain1[0]:fake_filter");
+    assert_eq!(wf.nodes[1].name, "chain2[0]:fake_action");
     assert!(wf.nodes[0].then_dest < 0);
-    assert!(wf.nodes[0].else_dest == 1);
+    assert_eq!(wf.nodes[0].else_dest, 1);
     assert!(wf.nodes[1].then_dest < 0);
     assert!(wf.nodes[1].else_dest < 0);
-    assert!(record[ACT_NAME] == Value::Int(1));
-    assert!(record[FLT_NAME] == Value::Int(1));
+    assert_eq!(record[ACT_NAME], Value::Int(1));
+    assert_eq!(record[FLT_NAME], Value::Int(1));
   }
 
   #[test]
@@ -299,14 +299,14 @@ mod tests {
     wf.run(&mut record);
 
     // Then
-    assert!(wf.nodes.len() == 2);
-    assert!(wf.nodes[0].name == "chain1[0]:fake_filter");
-    assert!(wf.nodes[1].name == "chain2[0]:fake_action");
+    assert_eq!(wf.nodes.len(), 2);
+    assert_eq!(wf.nodes[0].name, "chain1[0]:fake_filter");
+    assert_eq!(wf.nodes[1].name, "chain2[0]:fake_action");
     assert!(wf.nodes[0].then_dest < 0);
-    assert!(wf.nodes[0].else_dest == 1);
+    assert_eq!(wf.nodes[0].else_dest, 1);
     assert!(wf.nodes[1].then_dest < 0);
     assert!(wf.nodes[1].else_dest < 0);
-    assert!(record[ACT_NAME] == Value::Int(1));
-    assert!(record[FLT_NAME] == Value::Int(1));
+    assert_eq!(record[ACT_NAME], Value::Int(1));
+    assert_eq!(record[FLT_NAME], Value::Int(1));
   }
 }

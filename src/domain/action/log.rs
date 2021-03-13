@@ -1,8 +1,7 @@
-use crate::domain::{Action, LogMessage, LogPort, ModuleArgs, Record, Value};
+use crate::domain::{Action, LogMessage, LogPort, ModuleArgs, Record, Singleton, Value};
+use crate::singleton_borrow;
 use regex::Regex;
-use std::cell::RefCell;
 use std::ops::{Index, Range};
-use std::rc::Rc;
 
 type LogFormat = fn(&str) -> LogMessage;
 
@@ -16,14 +15,14 @@ const INFO_LOG_FORMAT: LogFormat = |s| LogMessage::INFO(&s);
 const DEBUG_LOG_FORMAT: LogFormat = |s| LogMessage::DEBUG(&s);
 
 pub struct Log {
-  logger: Rc<RefCell<dyn LogPort>>,
+  logger: Singleton<dyn LogPort>,
   log_format: LogFormat,
   template: String,
   var_locations: Vec<Range<usize>>,
 }
 
 impl Log {
-  pub fn from_args(mut args: ModuleArgs, logger: Rc<RefCell<dyn LogPort>>) -> Log {
+  pub fn from_args(mut args: ModuleArgs, logger: Singleton<dyn LogPort>) -> Log {
     let log_format = match args.remove("level") {
       Some(Value::Str(l)) => match l.as_ref() {
         "EMERG" => EMERG_LOG_FORMAT,
@@ -82,28 +81,25 @@ impl Log {
 impl Action for Log {
   fn act(&mut self, record: &mut Record) -> Result<(), ()> {
     let message = self.message_with_variables_from_record(record);
-    (self.logger.borrow_mut()).write((self.log_format)(&message))
+    singleton_borrow!(self.logger).write((self.log_format)(&message))
   }
 }
 
 #[cfg(test)]
-#[macro_use]
 mod tests {
   use super::Log;
-  use crate::assert_log_match;
-  use crate::domain::test_util::*;
-  use crate::domain::{Action, ModuleArgs, Record, Value};
+  use crate::domain::test_util::FakeLog;
+  use crate::domain::{Action, ModuleArgs, Record, Singleton, Value};
+  use crate::{assert_log_match, singleton_new, singleton_share};
   use core::panic;
-  use std::cell::RefCell;
   use std::collections::HashMap;
-  use std::rc::Rc;
 
   #[test]
   #[should_panic(expected = "The Log action needs a message template in “message”")]
   fn arg_message_is_mandatory() {
     let args: ModuleArgs = HashMap::new();
-    let logger = Rc::new(RefCell::new(FakeLog::new(Vec::new())));
-    Log::from_args(args, logger.clone());
+    let logger = singleton_new!(FakeLog::new(Vec::new()));
+    Log::from_args(args, singleton_share!(logger));
   }
 
   #[test]
@@ -166,14 +162,14 @@ mod tests {
     level: Option<&str>,
     logs: Vec<Result<Record, ()>>,
     vars: Vec<(&str, &str)>,
-  ) -> (Log, Rc<RefCell<FakeLog>>, Record) {
+  ) -> (Log, Singleton<FakeLog>, Record) {
     let mut args: ModuleArgs = HashMap::new();
     args.insert("message".to_string(), Value::Str(template.to_string()));
     if let Some(l) = level {
       args.insert("level".to_string(), Value::Str(l.to_string()));
     }
-    let logger = Rc::new(RefCell::new(FakeLog::new(logs)));
-    let log = Log::from_args(args, logger.clone());
+    let logger = singleton_new!(FakeLog::new(logs));
+    let log = Log::from_args(args, singleton_share!(logger));
     let mut record: Record = HashMap::new();
     for (name, value) in vars {
       record.insert(name.to_string(), Value::Str(value.to_string()));

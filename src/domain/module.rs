@@ -66,7 +66,7 @@ pub type ModuleArgs = HashMap<String, Value>;
 #[cfg(test)]
 mod tests {
   use super::{Module, Modules, Record, Value};
-  use crate::domain::test_util::*;
+  use crate::domain::test_util::{FakeAction, FakeFilter, ACT_NAME, FLT_NAME};
   use std::collections::HashMap;
 
   #[test]
@@ -80,9 +80,9 @@ mod tests {
     let mut module = Module::new(ACT_NAME.to_string(), HashMap::new(), &mods).unwrap();
 
     // Then
-    assert!(module.run(&mut record) == Ok(true));
+    assert_eq!(module.run(&mut record), Ok(true));
     assert!(record.contains_key(ACT_NAME));
-    assert!(record[ACT_NAME] == Value::Int(1));
+    assert_eq!(record[ACT_NAME], Value::Int(1));
   }
 
   #[test]
@@ -96,8 +96,8 @@ mod tests {
     let mut module = Module::new(FLT_NAME.to_string(), HashMap::new(), &mods).unwrap();
 
     // Then
-    assert!(module.run(&mut record) == Ok(false));
+    assert_eq!(module.run(&mut record), Ok(false));
     assert!(record.contains_key(FLT_NAME));
-    assert!(record[FLT_NAME] == Value::Int(1));
+    assert_eq!(record[FLT_NAME], Value::Int(1));
   }
 }
