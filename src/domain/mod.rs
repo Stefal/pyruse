@@ -3,14 +3,16 @@ pub mod filter;
 
 mod config;
 pub use self::config::*;
+mod counter;
+pub use self::counter::*;
+mod dnat;
+pub use self::dnat::*;
 mod log;
 pub use self::log::*;
 mod module;
 pub use self::module::*;
 mod workflow;
 pub use self::workflow::*;
-mod counter;
-pub use self::counter::*;
 
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;

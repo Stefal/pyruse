@@ -2,12 +2,16 @@ mod counter_raise;
 pub use self::counter_raise::*;
 mod counter_reset;
 pub use self::counter_reset::*;
+mod dnat_capture;
+pub use self::dnat_capture::*;
+mod dnat_replace;
+pub use self::dnat_replace::*;
 mod log;
 pub use self::log::*;
 mod noop;
 pub use self::noop::*;
 
-use crate::domain::{Counters, CountersPort, ModuleArgs, Singleton, Value};
+use crate::domain::{Counters, CountersPort, ModuleArgs, Record, Singleton, Value};
 use chrono::Duration;
 
 pub struct CounterAction<C: CountersPort> {
@@ -52,9 +56,17 @@ impl<C: CountersPort> CounterAction<C> {
   }
 }
 
-fn remove_acceptable_key(args: &mut ModuleArgs, key: &str) -> Option<String> {
+pub fn get_acceptable_key<'r, 'k>(record: &'r Record, key: &'k str) -> Option<String> {
+  match record.get(key) {
+    Some(&Value::Str(ref s)) => Some(s.clone()),
+    Some(&Value::Int(ref i)) => Some(format!("{}", i)),
+    Some(&Value::Date(ref d)) => Some(format!("{}", d.timestamp())),
+    _ => None,
+  }
+}
+
+pub fn remove_acceptable_key(args: &mut ModuleArgs, key: &str) -> Option<String> {
   match args.remove(key) {
-    None => None,
     Some(Value::Str(s)) => Some(s),
     Some(Value::Int(i)) => Some(format!("{}", i)),
     Some(Value::Date(d)) => Some(format!("{}", d.timestamp())),

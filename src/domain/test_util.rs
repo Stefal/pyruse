@@ -1,4 +1,7 @@
-use crate::domain::{Action, CounterData, CounterRef, CountersPort, Filter, LogMessage, LogPort, Record, Singleton, Value};
+use crate::domain::{
+  Action, CounterData, CounterRef, CountersPort, DnatMapping, DnatMappingsPort, Filter, LogMessage,
+  LogPort, Record, Singleton, Value,
+};
 use std::collections::HashMap;
 
 pub const ACT_NAME: &str = "fake_action";
@@ -90,5 +93,17 @@ impl CountersPort for FakeCountersAdapter {
   }
   fn remove_if(&mut self, predicate: impl Fn(&CounterData) -> bool) {
     singleton_borrow!(self.counters).retain(|_, v| !predicate(v));
+  }
+}
+
+pub struct FakeDnatMappings {
+  pub mappings: Vec<DnatMapping>,
+}
+impl DnatMappingsPort for FakeDnatMappings {
+  fn put(&mut self, mapping: DnatMapping) {
+    self.mappings.push(mapping);
+  }
+  fn get_all(&mut self) -> Vec<&DnatMapping> {
+    self.mappings.iter().collect()
   }
 }

@@ -3,14 +3,16 @@ mod domain;
 mod infra;
 mod service;
 
-use crate::domain::action::{CounterRaise, CounterReset, Log, Noop};
-use crate::domain::filter::Equals;
-use crate::domain::{ConfigPort, Counters, Modules, Workflow};
-use crate::infra::config::ConfFile;
-use crate::infra::counter::InMemoryCounterAdapter;
-use crate::infra::log::SystemdLogAdapter;
+use domain::action::{CounterRaise, CounterReset, DnatCapture, DnatReplace, Log, Noop};
+use domain::filter::Equals;
+use domain::{ConfigPort, Counters, Modules, Workflow};
+use infra::config::ConfFile;
+use infra::counter::InMemoryCounterAdapter;
+use infra::dnat::InMemoryDnatMappingsAdapter;
+use infra::log::SystemdLogAdapter;
 
 type CountersImpl = InMemoryCounterAdapter;
+type DnatImpl = InMemoryDnatMappingsAdapter;
 type LogImpl = SystemdLogAdapter;
 
 fn main() {
@@ -18,6 +20,7 @@ fn main() {
   let log = singleton_new!(LogImpl::open().expect("Error initializing systemd"));
   let mut modules = Modules::new();
   let counters = singleton_new!(Counters::<CountersImpl>::new(CountersImpl::new()));
+  let dnat = singleton_new!(DnatImpl::new());
   let gets_moved_into_closure = singleton_share!(counters);
   modules.register_action(
     "action_counterRaise".to_string(),
@@ -33,6 +36,26 @@ fn main() {
     "action_counterReset".to_string(),
     Box::new(move |a| {
       Box::new(CounterReset::<CountersImpl>::from_args(
+        a,
+        singleton_share!(gets_moved_into_closure), // clone for each call of the constructor
+      ))
+    }),
+  );
+  let gets_moved_into_closure = singleton_share!(dnat);
+  modules.register_action(
+    "action_dnatCapture".to_string(),
+    Box::new(move |a| {
+      Box::new(DnatCapture::from_args(
+        a,
+        singleton_share!(gets_moved_into_closure), // clone for each call of the constructor
+      ))
+    }),
+  );
+  let gets_moved_into_closure = singleton_share!(dnat);
+  modules.register_action(
+    "action_dnatReplace".to_string(),
+    Box::new(move |a| {
+      Box::new(DnatReplace::from_args(
         a,
         singleton_share!(gets_moved_into_closure), // clone for each call of the constructor
       ))
