@@ -3,20 +3,22 @@ mod domain;
 mod infra;
 mod service;
 
-use domain::action::{CounterRaise, CounterReset, DnatCapture, DnatReplace, Log, Noop};
+use domain::action::{CounterRaise, CounterReset, DnatCapture, DnatReplace, Email, Log, Noop};
 use domain::filter::Equals;
 use domain::{ConfigPort, Counters, Modules, Workflow};
-use infra::config::ConfFile;
 use infra::counter::InMemoryCounterAdapter;
 use infra::dnat::InMemoryDnatMappingsAdapter;
 use infra::log::SystemdLogAdapter;
+use infra::{config::ConfFile, email::ProcessEmailAdapter};
 
 type CountersImpl = InMemoryCounterAdapter;
 type DnatImpl = InMemoryDnatMappingsAdapter;
+type EmailImpl = ProcessEmailAdapter;
 type LogImpl = SystemdLogAdapter;
 
 fn main() {
   let mut conf = ConfFile::from_filesystem().to_config();
+  let email = singleton_new!(EmailImpl::new(conf.get()));
   let log = singleton_new!(LogImpl::open().expect("Error initializing systemd"));
   let mut modules = Modules::new();
   let counters = singleton_new!(Counters::<CountersImpl>::new(CountersImpl::new()));
@@ -56,6 +58,16 @@ fn main() {
     "action_dnatReplace".to_string(),
     Box::new(move |a| {
       Box::new(DnatReplace::from_args(
+        a,
+        singleton_share!(gets_moved_into_closure), // clone for each call of the constructor
+      ))
+    }),
+  );
+  let gets_moved_into_closure = singleton_share!(email);
+  modules.register_action(
+    "action_email".to_string(),
+    Box::new(move |a| {
+      Box::new(Email::from_args(
         a,
         singleton_share!(gets_moved_into_closure), // clone for each call of the constructor
       ))

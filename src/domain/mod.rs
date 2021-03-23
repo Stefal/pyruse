@@ -7,10 +7,14 @@ mod counter;
 pub use self::counter::*;
 mod dnat;
 pub use self::dnat::*;
+mod email;
+pub use self::email::*;
 mod log;
 pub use self::log::*;
 mod module;
 pub use self::module::*;
+mod template;
+pub use self::template::*;
 mod workflow;
 pub use self::workflow::*;
 

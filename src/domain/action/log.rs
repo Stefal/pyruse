@@ -1,7 +1,5 @@
-use crate::domain::{Action, LogMessage, LogPort, ModuleArgs, Record, Singleton, Value};
+use crate::domain::{Action, LogMessage, LogPort, ModuleArgs, Record, Singleton, Template, Value};
 use crate::singleton_borrow;
-use regex::Regex;
-use std::ops::{Index, Range};
 
 type LogFormat = fn(&str) -> LogMessage;
 
@@ -17,8 +15,7 @@ const DEBUG_LOG_FORMAT: LogFormat = |s| LogMessage::DEBUG(&s);
 pub struct Log {
   logger: Singleton<dyn LogPort>,
   log_format: LogFormat,
-  template: String,
-  var_locations: Vec<Range<usize>>,
+  template: Template,
 }
 
 impl Log {
@@ -40,47 +37,21 @@ impl Log {
       },
       _ => INFO_LOG_FORMAT,
     };
-    let template = match args.remove("message") {
+    let template = Template::new(match args.remove("message") {
       Some(Value::Str(s)) => s,
       _ => panic!("The Log action needs a message template in “message”"),
-    };
-    let var_locations = Regex::new(r"\{\w+\}")
-      .unwrap()
-      .find_iter(&template)
-      .map(|m| m.range())
-      .collect();
+    });
     Log {
       logger,
       log_format,
       template,
-      var_locations,
     }
-  }
-
-  fn message_with_variables_from_record(&self, record: &mut Record) -> String {
-    let tpl = &self.template;
-    if self.var_locations.len() == 0 {
-      return tpl.clone();
-    }
-    let mut message = String::with_capacity(tpl.len() * 2);
-    let mut last_index = 0;
-    for Range { start, end } in self.var_locations.iter() {
-      message.push_str(tpl.index(last_index..*start));
-      if let Some(Value::Str(s)) = record.get(tpl.index((start + 1)..(end - 1))) {
-        message.push_str(&s);
-      } else {
-        message.push_str(tpl.index(*start..*end));
-      }
-      last_index = *end;
-    }
-    message.push_str(tpl.index(last_index..tpl.len()));
-    message
   }
 }
 
 impl Action for Log {
   fn act(&mut self, record: &mut Record) -> Result<(), ()> {
-    let message = self.message_with_variables_from_record(record);
+    let message = self.template.format(record);
     singleton_borrow!(self.logger).write((self.log_format)(&message))
   }
 }

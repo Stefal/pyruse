@@ -6,6 +6,8 @@ mod dnat_capture;
 pub use self::dnat_capture::*;
 mod dnat_replace;
 pub use self::dnat_replace::*;
+mod email;
+pub use self::email::*;
 mod log;
 pub use self::log::*;
 mod noop;
