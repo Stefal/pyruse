@@ -2,12 +2,17 @@ use crate::domain::{Config, EmailAddress, EmailData, EmailPort, Value};
 use chrono::Utc;
 use lettre_email::{mime::Mime, Header, MimeMultipartType, PartBuilder};
 use std::{
+  collections::HashMap,
   convert::TryFrom,
   ffi::OsString,
   io::Write,
   process::{Command, Stdio},
   str::FromStr,
 };
+
+const DEFAULT_FROM: &str = "pyruse@localhost";
+const DEFAULT_TO: &str = "hostmaster@localhost";
+const DEFAULT_SENDMAIL: &[&str] = &["/usr/bin/sendmail", "-t"];
 
 #[derive(Clone)]
 pub struct ProcessEmailAdapter {
@@ -19,29 +24,41 @@ pub struct ProcessEmailAdapter {
 
 impl ProcessEmailAdapter {
   pub fn new(conf: &Config) -> ProcessEmailAdapter {
+    let mut default_options = HashMap::new();
+    default_options.insert("from".to_string(), Value::Str(DEFAULT_FROM.to_string()));
+    default_options.insert(
+      "to".to_string(),
+      Value::List(vec![Value::Str(DEFAULT_TO.to_string())]),
+    );
+    default_options.insert(
+      "sendmail".to_string(),
+      Value::List(
+        DEFAULT_SENDMAIL
+          .iter()
+          .map(|s| Value::Str(s.to_string()))
+          .collect(),
+      ),
+    );
     let options = match conf.options.get("email") {
       Some(Value::Map(m)) => m,
-      None => panic!("Email options not found"),
-      _ => panic!("Email options are not in the expected format (a set of properties)"),
+      _ => &default_options,
     };
     let from = match options.get("from") {
       Some(Value::Str(s)) => {
         EmailAddress::try_from(s.clone()).expect(&format!("Invalid address: {}", s))
       }
-      None => panic!("The “from” property was not found in the email options"),
-      _ => panic!("The “from” property is not an email address as expected"),
+      _ => EmailAddress::try_from(DEFAULT_FROM.to_string()).unwrap(),
     };
-    let to = match options.get("to") {
+    let mut to = match options.get("to") {
       Some(Value::Str(s)) => vec!(EmailAddress::try_from(s.clone()).expect(&format!("Invalid address: {}", s))),
       Some(Value::List(l)) => l.iter().map(|v| match v {
         Value::Str(s) => EmailAddress::try_from(s.clone()).expect(&format!("Invalid address: {}", s)),
         _ => panic!("One item in the list found in property “to” of email options is not an email address as expected"),
       }).collect(),
-      None => panic!("The “to” property was not found in the email options"),
-      _ => panic!("The “to” property is not a list of addresses as expected"),
+      _ => vec!(EmailAddress::try_from(DEFAULT_TO.to_string()).unwrap()),
     };
     if to.is_empty() {
-      panic!("No recipients were found in the “to” property of email options");
+      to = vec![EmailAddress::try_from(DEFAULT_TO.to_string()).unwrap()];
     }
     let mut sendmail_params = match options.get("sendmail") {
       Some(Value::Str(s)) => vec!(OsString::from_str(s).expect(&format!("“{}” could not be read", s))),
@@ -49,11 +66,16 @@ impl ProcessEmailAdapter {
         Value::Str(s) => OsString::from_str(s).expect(&format!("“{}” could not be read", s)),
         _ => panic!("One item in the “sendmail” command-line components of email options is not a shell command or a parameter"),
       }).collect(),
-      None => panic!("The “sendmail” property was not found in the email options"),
-      _ => panic!("The “sendmail” property is not a list composing a `sendmail …` command as expected"),
+      _ => DEFAULT_SENDMAIL
+      .iter()
+      .map(|s| OsString::from_str(s).unwrap())
+      .collect(),
     };
     if sendmail_params.is_empty() {
-      panic!("No sendmail command was found in the “sendmail” property of email options");
+      sendmail_params = DEFAULT_SENDMAIL
+        .iter()
+        .map(|s| OsString::from_str(s).unwrap())
+        .collect();
     }
     let sendmail_cmd = sendmail_params.remove(0);
     ProcessEmailAdapter {
@@ -135,8 +157,8 @@ impl EmailPort for ProcessEmailAdapter {
 
 #[cfg(test)]
 mod tests {
+  use super::{ProcessEmailAdapter, DEFAULT_FROM, DEFAULT_SENDMAIL, DEFAULT_TO};
   use crate::domain::{Config, EmailData, EmailPort, Value};
-  use crate::infra::email::ProcessEmailAdapter;
   use indexmap::IndexMap;
   use regex::Regex;
   use std::collections::HashMap;
@@ -144,31 +166,41 @@ mod tests {
   use std::fs;
 
   #[test]
-  #[should_panic(expected = "Email options not found")]
-  fn if_no_email_options_then_panic() {
+  fn if_no_email_options_then_defaults_are_used() {
     let conf = Config {
       actions: IndexMap::new(),
       options: HashMap::new(),
     };
-    ProcessEmailAdapter::new(&conf);
+    let proc = ProcessEmailAdapter::new(&conf);
+    let from: String = proc.from.clone().into();
+    let to: String = proc.to[0].clone().into();
+    let sendmail = &[
+      proc.sendmail_cmd.to_str().unwrap(),
+      proc.sendmail_params[0].to_str().unwrap(),
+    ];
+    assert_eq!(DEFAULT_FROM.to_string(), from);
+    assert_eq!(DEFAULT_TO.to_string(), to);
+    assert_eq!(DEFAULT_SENDMAIL, sendmail);
   }
 
   #[test]
-  #[should_panic(expected = "The “from” property was not found in the email options")]
-  fn if_no_from_email_then_panic() {
+  fn if_no_from_email_then_default_from() {
     let conf = test_config("", |o| {
       o.remove("from");
     });
-    ProcessEmailAdapter::new(&conf);
+    let proc = ProcessEmailAdapter::new(&conf);
+    let from: String = proc.from.clone().into();
+    assert_eq!(DEFAULT_FROM.to_string(), from);
   }
 
   #[test]
-  #[should_panic(expected = "The “from” property is not an email address as expected")]
-  fn from_email_must_be_a_string() {
+  fn from_email_must_be_a_string_or_default_from_is_used() {
     let conf = test_config("", |o| {
       o.insert("from".to_string(), Value::Int(33));
     });
-    ProcessEmailAdapter::new(&conf);
+    let proc = ProcessEmailAdapter::new(&conf);
+    let from: String = proc.from.clone().into();
+    assert_eq!(DEFAULT_FROM.to_string(), from);
   }
 
   #[test]
@@ -181,12 +213,13 @@ mod tests {
   }
 
   #[test]
-  #[should_panic(expected = "The “to” property was not found in the email options")]
-  fn if_no_to_emails_then_panic() {
+  fn if_no_to_emails_then_default_to_is_used() {
     let conf = test_config("", |o| {
       o.remove("to");
     });
-    ProcessEmailAdapter::new(&conf);
+    let proc = ProcessEmailAdapter::new(&conf);
+    let to: String = proc.to[0].clone().into();
+    assert_eq!(DEFAULT_TO.to_string(), to);
   }
 
   #[test]
@@ -207,32 +240,39 @@ mod tests {
   }
 
   #[test]
-  #[should_panic(expected = "No recipients were found in the “to” property of email options")]
-  fn if_empty_to_list_then_panic() {
+  fn if_empty_to_list_then_default_to_is_used() {
     let conf = test_config("", |o| {
       o.insert("to".to_string(), Value::List(Vec::new()));
     });
-    ProcessEmailAdapter::new(&conf);
+    let proc = ProcessEmailAdapter::new(&conf);
+    let to: String = proc.to[0].clone().into();
+    assert_eq!(DEFAULT_TO.to_string(), to);
   }
 
   #[test]
-  #[should_panic(expected = "The “sendmail” property was not found in the email options")]
-  fn if_no_sendmail_command_then_panic() {
+  fn if_no_sendmail_command_then_default_sendmail_is_used() {
     let conf = test_config("", |o| {
       o.remove("sendmail");
     });
-    ProcessEmailAdapter::new(&conf);
+    let proc = ProcessEmailAdapter::new(&conf);
+    let sendmail = &[
+      proc.sendmail_cmd.to_str().unwrap(),
+      proc.sendmail_params[0].to_str().unwrap(),
+    ];
+    assert_eq!(DEFAULT_SENDMAIL, sendmail);
   }
 
   #[test]
-  #[should_panic(
-    expected = "No sendmail command was found in the “sendmail” property of email options"
-  )]
-  fn sendmail_command_cannot_be_an_empty_list() {
+  fn sendmail_command_cannot_be_an_empty_list_or_default_sendmail_is_used() {
     let conf = test_config("", |o| {
       o.insert("sendmail".to_string(), Value::List(Vec::new()));
     });
-    ProcessEmailAdapter::new(&conf);
+    let proc = ProcessEmailAdapter::new(&conf);
+    let sendmail = &[
+      proc.sendmail_cmd.to_str().unwrap(),
+      proc.sendmail_params[0].to_str().unwrap(),
+    ];
+    assert_eq!(DEFAULT_SENDMAIL, sendmail);
   }
 
   #[test]
