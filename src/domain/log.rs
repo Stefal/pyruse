@@ -1,4 +1,4 @@
-use crate::domain::Record;
+use crate::domain::{Error, Record};
 
 pub enum LogMessage<'t> {
   EMERG(&'t str),
@@ -12,6 +12,6 @@ pub enum LogMessage<'t> {
 }
 
 pub trait LogPort {
-  fn read_next(&mut self) -> Result<Record, ()>;
-  fn write(&mut self, message: LogMessage) -> Result<(), ()>;
+  fn read_next(&mut self) -> Result<Record, Error>;
+  fn write(&mut self, message: LogMessage) -> Result<(), Error>;
 }

@@ -64,7 +64,7 @@ mod tests {
   fn modify_allows_modifying_an_entry_and_returns_the_new_value() {
     let mut counters: HashMap<String, CounterKeys> = HashMap::new();
     let counter = "counter";
-    let key = Value::Str("1.2.3.4".to_string());
+    let key = Value::Str("1.2.3.4".into());
     let new_data = (2, None);
     counters.insert(counter.to_string(), HashMap::new());
     counters
@@ -87,7 +87,7 @@ mod tests {
   fn after_remove_the_entry_is_not_there() {
     let mut counters: HashMap<String, CounterKeys> = HashMap::new();
     let counter = "counter";
-    let key1 = Value::Str("1.2.3.4".to_string());
+    let key1 = Value::Str("1.2.3.4".into());
     let key2 = Value::Bool(true);
     let data1 = (2, None);
     let data2 = (5, None);
@@ -109,7 +109,7 @@ mod tests {
   fn remove_on_unexisting_entry_does_nothing_and_returns_none() {
     let mut counters: HashMap<String, CounterKeys> = HashMap::new();
     let counter = "counter";
-    let key1 = Value::Str("1.2.3.4".to_string());
+    let key1 = Value::Str("1.2.3.4".into());
     let key2 = Value::Bool(true);
     let data1 = (2, None);
     counters.insert(counter.to_string(), HashMap::new());
@@ -129,7 +129,7 @@ mod tests {
   fn after_last_key_is_removed_by_remove_counter_is_also_removed() {
     let mut counters: HashMap<String, CounterKeys> = HashMap::new();
     let counter = "counter";
-    let key1 = Value::Str("1.2.3.4".to_string());
+    let key1 = Value::Str("1.2.3.4".into());
     let key2 = Value::Bool(true);
     let data1 = (2, None);
     let data2 = (5, None);
@@ -147,7 +147,7 @@ mod tests {
   fn removeif_removes_entries_that_match_the_predicate() {
     let mut counters: HashMap<String, CounterKeys> = HashMap::new();
     let counter = "counter";
-    let key1 = Value::Str("1.2.3.4".to_string());
+    let key1 = Value::Str("1.2.3.4".into());
     let key2 = Value::Bool(true);
     let data1 = (2, None);
     let data2 = (5, None);
@@ -168,7 +168,7 @@ mod tests {
   fn after_last_key_is_removed_by_removeif_counter_is_also_removed() {
     let mut counters: HashMap<String, CounterKeys> = HashMap::new();
     let counter = "counter";
-    let key1 = Value::Str("1.2.3.4".to_string());
+    let key1 = Value::Str("1.2.3.4".into());
     let data1 = (2, None);
     counters.insert(counter.to_string(), HashMap::new());
     let map = counters.get_mut(counter).unwrap();

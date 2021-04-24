@@ -51,34 +51,34 @@ mod tests {
 
   #[test]
   fn template_without_placeholder_is_rendered_as_is() {
-    let template = Template::new("x".to_string());
+    let template = Template::new("x".into());
     let result = template.format(&HashMap::new());
     assert_eq!("x", &result);
   }
 
   #[test]
   fn placeholder_without_variable_is_rendered_as_is() {
-    let template = Template::new("x{y}z".to_string());
+    let template = Template::new("x{y}z".into());
     let result = template.format(&HashMap::new());
     assert_eq!("x{y}z", &result);
   }
 
   #[test]
   fn placeholder_with_variable_is_replaced() {
-    let template = Template::new("x{y}z".to_string());
+    let template = Template::new("x{y}z".into());
     let mut record = HashMap::new();
-    record.insert("y".to_string(), Value::Str("y".to_string()));
+    record.insert("y".into(), Value::Str("y".into()));
     let result = template.format(&record);
     assert_eq!("xyz", &result);
   }
 
   #[test]
   fn all_variables_are_replaced() {
-    let template = Template::new("{x}{a}{yy}-{zzz}".to_string());
+    let template = Template::new("{x}{a}{yy}-{zzz}".into());
     let mut record = HashMap::new();
-    record.insert("x".to_string(), Value::Str("x".to_string()));
-    record.insert("yy".to_string(), Value::Str("y".to_string()));
-    record.insert("zzz".to_string(), Value::Str("z".to_string()));
+    record.insert("x".into(), Value::Str("x".into()));
+    record.insert("yy".into(), Value::Str("y".into()));
+    record.insert("zzz".into(), Value::Str("z".into()));
     let result = template.format(&record);
     assert_eq!("x{a}y-z", &result);
   }

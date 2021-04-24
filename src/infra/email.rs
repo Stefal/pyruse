@@ -1,4 +1,4 @@
-use crate::domain::{Config, EmailAddress, EmailData, EmailPort, Value};
+use crate::domain::{Config, EmailAddress, EmailData, EmailPort, Error, Value};
 use chrono::Utc;
 use lettre_email::{mime::Mime, Header, MimeMultipartType, PartBuilder};
 use std::{
@@ -25,13 +25,13 @@ pub struct ProcessEmailAdapter {
 impl ProcessEmailAdapter {
   pub fn new(conf: &Config) -> ProcessEmailAdapter {
     let mut default_options = HashMap::new();
-    default_options.insert("from".to_string(), Value::Str(DEFAULT_FROM.to_string()));
+    default_options.insert("from".into(), Value::Str(DEFAULT_FROM.to_string()));
     default_options.insert(
-      "to".to_string(),
+      "to".into(),
       Value::List(vec![Value::Str(DEFAULT_TO.to_string())]),
     );
     default_options.insert(
-      "sendmail".to_string(),
+      "sendmail".into(),
       Value::List(
         DEFAULT_SENDMAIL
           .iter()
@@ -88,16 +88,13 @@ impl ProcessEmailAdapter {
 }
 
 impl EmailPort for ProcessEmailAdapter {
-  fn send(&mut self, email: EmailData) -> Result<(), ()> {
+  fn send(&mut self, email: EmailData) -> Result<(), Error> {
     let mut main_part = PartBuilder::new()
-      .header(Header::new("From".to_string(), self.from.to_string()))
+      .header(Header::new("From".into(), self.from.to_string()))
+      .header(Header::new("Return-Path".into(), self.from.to_string()))
+      .header(Header::new("Date".into(), Utc::now().to_rfc2822()))
       .header(Header::new(
-        "Return-Path".to_string(),
-        self.from.to_string(),
-      ))
-      .header(Header::new("Date".to_string(), Utc::now().to_rfc2822()))
-      .header(Header::new(
-        "To".to_string(),
+        "To".into(),
         self
           .to
           .iter()
@@ -106,7 +103,7 @@ impl EmailPort for ProcessEmailAdapter {
           .join(","),
       ))
       .header(Header::new(
-        "Subject".to_string(),
+        "Subject".into(),
         format!(
           "=?utf-8?Q?{}?=",
           quoted_printable::encode_to_str(email.subject)
@@ -117,8 +114,8 @@ impl EmailPort for ProcessEmailAdapter {
       main_part = main_part.child(
         PartBuilder::new()
           .header(Header::new(
-            "Content-Transfer-Encoding".to_string(),
-            "QUOTED-PRINTABLE".to_string(),
+            "Content-Transfer-Encoding".into(),
+            "QUOTED-PRINTABLE".into(),
           ))
           .body(quoted_printable::encode_to_str(text))
           .content_type(&Mime::from_str("text/plain; charset=UTF-8").unwrap())
@@ -129,8 +126,8 @@ impl EmailPort for ProcessEmailAdapter {
       main_part = main_part.child(
         PartBuilder::new()
           .header(Header::new(
-            "Content-Transfer-Encoding".to_string(),
-            "QUOTED-PRINTABLE".to_string(),
+            "Content-Transfer-Encoding".into(),
+            "QUOTED-PRINTABLE".into(),
           ))
           .body(quoted_printable::encode_to_str(html))
           .content_type(&Mime::from_str("text/html; charset=UTF-8").unwrap())
@@ -142,16 +139,14 @@ impl EmailPort for ProcessEmailAdapter {
     for p in &self.sendmail_params {
       sendmail.arg(p);
     }
-    match sendmail.stdin(Stdio::piped()).spawn() {
-      Ok(mut sendmail_process) => match sendmail_process.stdin.as_mut() {
-        Some(stdin) => match stdin.write_all(mime_message.as_bytes()) {
-          Ok(_) => Ok(()),
-          Err(_) => Err(()),
-        },
-        None => Err(()),
-      },
-      Err(_) => Err(()),
-    }
+    sendmail
+      .stdin(Stdio::piped())
+      .spawn()?
+      .stdin
+      .as_mut()
+      .ok_or(Error::from("Cannot write to sendmail process"))?
+      .write_all(mime_message.as_bytes())
+      .map_err(|e| e.into())
   }
 }
 
@@ -159,7 +154,6 @@ impl EmailPort for ProcessEmailAdapter {
 mod tests {
   use super::{ProcessEmailAdapter, DEFAULT_FROM, DEFAULT_SENDMAIL, DEFAULT_TO};
   use crate::domain::{Config, EmailData, EmailPort, Value};
-  use indexmap::IndexMap;
   use regex::Regex;
   use std::collections::HashMap;
   use std::env::temp_dir;
@@ -167,10 +161,7 @@ mod tests {
 
   #[test]
   fn if_no_email_options_then_defaults_are_used() {
-    let conf = Config {
-      actions: IndexMap::new(),
-      options: HashMap::new(),
-    };
+    let conf = Config::new(None, None);
     let proc = ProcessEmailAdapter::new(&conf);
     let from: String = proc.from.clone().into();
     let to: String = proc.to[0].clone().into();
@@ -196,7 +187,7 @@ mod tests {
   #[test]
   fn from_email_must_be_a_string_or_default_from_is_used() {
     let conf = test_config("", |o| {
-      o.insert("from".to_string(), Value::Int(33));
+      o.insert("from".into(), Value::Int(33));
     });
     let proc = ProcessEmailAdapter::new(&conf);
     let from: String = proc.from.clone().into();
@@ -207,7 +198,7 @@ mod tests {
   #[should_panic(expected = "Invalid address: wrong 😱")]
   fn an_email_address_must_be_valid() {
     let conf = test_config("", |o| {
-      o.insert("from".to_string(), Value::Str("wrong 😱".to_string()));
+      o.insert("from".into(), Value::Str("wrong 😱".into()));
     });
     ProcessEmailAdapter::new(&conf);
   }
@@ -229,11 +220,8 @@ mod tests {
   fn to_emails_must_be_strings() {
     let conf = test_config("", |o| {
       o.insert(
-        "to".to_string(),
-        Value::List(vec![
-          Value::Str("ok@example.org".to_string()),
-          Value::Bool(true),
-        ]),
+        "to".into(),
+        Value::List(vec![Value::Str("ok@example.org".into()), Value::Bool(true)]),
       );
     });
     ProcessEmailAdapter::new(&conf);
@@ -242,7 +230,7 @@ mod tests {
   #[test]
   fn if_empty_to_list_then_default_to_is_used() {
     let conf = test_config("", |o| {
-      o.insert("to".to_string(), Value::List(Vec::new()));
+      o.insert("to".into(), Value::List(Vec::new()));
     });
     let proc = ProcessEmailAdapter::new(&conf);
     let to: String = proc.to[0].clone().into();
@@ -265,7 +253,7 @@ mod tests {
   #[test]
   fn sendmail_command_cannot_be_an_empty_list_or_default_sendmail_is_used() {
     let conf = test_config("", |o| {
-      o.insert("sendmail".to_string(), Value::List(Vec::new()));
+      o.insert("sendmail".into(), Value::List(Vec::new()));
     });
     let proc = ProcessEmailAdapter::new(&conf);
     let sendmail = &[
@@ -289,7 +277,7 @@ mod tests {
     let conf = test_config(filename, |_| {});
     let mut proc = ProcessEmailAdapter::new(&conf);
     let data = EmailData {
-      text: Some("= Flags\n\n« 🇫🇷🇨🇦🇯🇵 »".to_string()),
+      text: Some("= Flags\n\n« 🇫🇷🇨🇦🇯🇵 »".into()),
       html: Some(
         r#"<html>
         <body>
@@ -297,9 +285,9 @@ mod tests {
           <p>« 🇫🇷🇨🇦🇯🇵 »</p>
         </body>
       </html>"#
-          .to_string(),
+          .into(),
       ),
-      subject: "Ého ! Ça va ? … 😼".to_string(),
+      subject: "Ého ! Ça va ? … 😼".into(),
     };
     proc.send(data).unwrap();
 
@@ -355,12 +343,9 @@ mod tests {
 
   fn test_config(test_file: &str, alter_email_options: fn(&mut HashMap<String, Value>)) -> Config {
     let mut sendmail_opts = HashMap::new();
+    sendmail_opts.insert("from".into(), Value::Str("pyruse@localhost".into()));
     sendmail_opts.insert(
-      "from".to_string(),
-      Value::Str("pyruse@localhost".to_string()),
-    );
-    sendmail_opts.insert(
-      "to".to_string(),
+      "to".into(),
       Value::List(
         vec!["root@localhost", "abuse@localhost"]
           .iter()
@@ -369,7 +354,7 @@ mod tests {
       ),
     );
     sendmail_opts.insert(
-      "sendmail".to_string(),
+      "sendmail".into(),
       Value::List(
         //vec!["bash", "-c", "tee test.eml | sendmail -t"]
         vec!["bash", "-c", &format!(r#"cat >"{}""#, test_file)]
@@ -380,10 +365,7 @@ mod tests {
     );
     alter_email_options(&mut sendmail_opts);
     let mut options = HashMap::new();
-    options.insert("email".to_string(), Value::Map(sendmail_opts));
-    Config {
-      actions: IndexMap::new(),
-      options,
-    }
+    options.insert("email".into(), Value::Map(sendmail_opts));
+    Config::new(None, Some(options))
   }
 }

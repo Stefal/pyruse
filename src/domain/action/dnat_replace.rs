@@ -1,5 +1,7 @@
 use super::{get_acceptable_key, remove_acceptable_key};
-use crate::domain::{Action, DnatMapping, DnatMappingsPort, ModuleArgs, Record, Singleton, Value};
+use crate::domain::{
+  Action, DnatMapping, DnatMappingsPort, Error, ModuleArgs, Record, Singleton, Value,
+};
 use crate::singleton_borrow;
 
 type MappingGetter = fn(&DnatMapping) -> &Option<String>;
@@ -54,7 +56,7 @@ impl DnatReplace {
 }
 
 impl Action for DnatReplace {
-  fn act(&mut self, record: &mut Record) -> Result<(), ()> {
+  fn act(&mut self, record: &mut Record) -> Result<(), Error> {
     for (field, _) in self.matchers.iter() {
       if !record.contains_key(field) {
         return Ok(()); // not applicable
@@ -97,7 +99,7 @@ mod tests {
     let mappings = singleton_new!(FakeDnatMappings {
       mappings: Vec::new()
     });
-    args.insert("addr".to_string(), Value::Str("int_ip".to_string()));
+    args.insert("addr".into(), Value::Str("int_ip".into()));
     let _ = DnatReplace::from_args(args, singleton_share!(mappings));
   }
 
@@ -110,7 +112,7 @@ mod tests {
       mappings: Vec::new()
     });
     let mut args = HashMap::with_capacity(1);
-    args.insert("saddrInto".to_string(), Value::Str("src_ip".to_string()));
+    args.insert("saddrInto".into(), Value::Str("src_ip".into()));
     let _ = DnatReplace::from_args(args, singleton_share!(mappings));
   }
 
@@ -120,11 +122,11 @@ mod tests {
       mappings: Vec::new()
     });
     let mut args = HashMap::with_capacity(2);
-    args.insert("saddrInto".to_string(), Value::Str("src_ip".to_string()));
-    args.insert("dport".to_string(), Value::Int(1234));
+    args.insert("saddrInto".into(), Value::Str("src_ip".into()));
+    args.insert("dport".into(), Value::Int(1234));
     let action = DnatReplace::from_args(args, singleton_share!(mappings));
     assert_eq!(
-      vec!(("1234".to_string(), Some("dp".to_string()))),
+      vec!(("1234".into(), Some("dp".into()))),
       action
         .matchers
         .iter()
@@ -132,7 +134,7 @@ mod tests {
         .collect::<Vec<(String, Option<String>)>>()
     );
     assert_eq!(
-      vec!(("src_ip".to_string(), Some("sa".to_string()))),
+      vec!(("src_ip".into(), Some("sa".into()))),
       action
         .updaters
         .iter()
@@ -147,11 +149,11 @@ mod tests {
       mappings: vec!(sample_dnat_mapping()),
     });
     let mut args = HashMap::with_capacity(2);
-    args.insert("saddrInto".to_string(), Value::Str("src_ip".to_string()));
-    args.insert("port".to_string(), Value::Str("src_port".to_string()));
+    args.insert("saddrInto".into(), Value::Str("src_ip".into()));
+    args.insert("port".into(), Value::Str("src_port".into()));
     let mut record = HashMap::new();
-    record.insert("src_ip".to_string(), Value::Str("prox".to_string()));
-    record.insert("dest_ip".to_string(), Value::Str("serv".to_string()));
+    record.insert("src_ip".into(), Value::Str("prox".into()));
+    record.insert("dest_ip".into(), Value::Str("serv".into()));
     let expected = record.clone();
     let mut action = DnatReplace::from_args(args, singleton_share!(mappings));
     action.act(&mut record).unwrap();
@@ -164,12 +166,12 @@ mod tests {
       mappings: vec!(sample_dnat_mapping()),
     });
     let mut args = HashMap::with_capacity(2);
-    args.insert("saddrInto".to_string(), Value::Str("src_ip".to_string()));
-    args.insert("port".to_string(), Value::Str("src_port".to_string()));
+    args.insert("saddrInto".into(), Value::Str("src_ip".into()));
+    args.insert("port".into(), Value::Str("src_port".into()));
     let mut record = HashMap::with_capacity(3);
-    record.insert("src_ip".to_string(), Value::Str("prox".to_string()));
-    record.insert("src_port".to_string(), Value::Str("1234".to_string()));
-    record.insert("dest_ip".to_string(), Value::Str("serv".to_string()));
+    record.insert("src_ip".into(), Value::Str("prox".into()));
+    record.insert("src_port".into(), Value::Str("1234".into()));
+    record.insert("dest_ip".into(), Value::Str("serv".into()));
     let expected = record.clone();
     let mut action = DnatReplace::from_args(args, singleton_share!(mappings));
     action.act(&mut record).unwrap();
@@ -182,39 +184,39 @@ mod tests {
       mappings: vec!(sample_dnat_mapping()),
     });
     let mut args = HashMap::with_capacity(2);
-    args.insert("saddrInto".to_string(), Value::Str("src_ip".to_string()));
-    args.insert("port".to_string(), Value::Str("src_port".to_string()));
+    args.insert("saddrInto".into(), Value::Str("src_ip".into()));
+    args.insert("port".into(), Value::Str("src_port".into()));
     let mut record = HashMap::with_capacity(3);
-    record.insert("src_ip".to_string(), Value::Str("prox".to_string()));
-    record.insert("src_port".to_string(), Value::Int(12345));
-    record.insert("dest_ip".to_string(), Value::Str("serv".to_string()));
+    record.insert("src_ip".into(), Value::Str("prox".into()));
+    record.insert("src_port".into(), Value::Int(12345));
+    record.insert("dest_ip".into(), Value::Str("serv".into()));
     let mut action = DnatReplace::from_args(args, singleton_share!(mappings));
     action.act(&mut record).unwrap();
     assert_eq!(3, record.len());
-    assert_eq!(Some(&Value::Str("bad".to_string())), record.get("src_ip"));
+    assert_eq!(Some(&Value::Str("bad".into())), record.get("src_ip"));
     assert_eq!(Some(&Value::Int(12345)), record.get("src_port"));
-    assert_eq!(Some(&Value::Str("serv".to_string())), record.get("dest_ip"));
+    assert_eq!(Some(&Value::Str("serv".into())), record.get("dest_ip"));
   }
 
   fn mapping_getter_identification() -> DnatMapping {
     DnatMapping {
-      src_addr: Some("sa".to_string()),
-      src_port: Some("sp".to_string()),
-      internal_addr: Some("ia".to_string()),
-      internal_port: Some("ip".to_string()),
-      dest_addr: Some("da".to_string()),
-      dest_port: Some("dp".to_string()),
+      src_addr: Some("sa".into()),
+      src_port: Some("sp".into()),
+      internal_addr: Some("ia".into()),
+      internal_port: Some("ip".into()),
+      dest_addr: Some("da".into()),
+      dest_port: Some("dp".into()),
       keep_until: Utc::now(),
     }
   }
 
   fn sample_dnat_mapping() -> DnatMapping {
     DnatMapping {
-      src_addr: Some("bad".to_string()),
+      src_addr: Some("bad".into()),
       src_port: None,
-      internal_addr: Some("prox".to_string()),
-      internal_port: Some("12345".to_string()),
-      dest_addr: Some("serv".to_string()),
+      internal_addr: Some("prox".into()),
+      internal_port: Some("12345".into()),
+      dest_addr: Some("serv".into()),
       dest_port: None,
       keep_until: Utc::now() + Duration::hours(1),
     }

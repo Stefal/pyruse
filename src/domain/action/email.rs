@@ -1,4 +1,6 @@
-use crate::domain::{Action, EmailData, EmailPort, ModuleArgs, Record, Singleton, Template, Value};
+use crate::domain::{
+  Action, EmailData, EmailPort, Error, ModuleArgs, Record, Singleton, Template, Value,
+};
 use crate::singleton_borrow;
 
 pub struct Email {
@@ -11,7 +13,7 @@ impl Email {
   pub fn from_args(mut args: ModuleArgs, mailer: Singleton<dyn EmailPort>) -> Email {
     let subject = match args.remove("subject") {
       Some(Value::Str(s)) => s,
-      _ => "Pyruse Notification".to_string(),
+      _ => "Pyruse Notification".into(),
     };
     let email = EmailData::new(subject);
     let template = match args.remove("message") {
@@ -33,7 +35,7 @@ impl Email {
 }
 
 impl Action for Email {
-  fn act(&mut self, record: &mut Record) -> Result<(), ()> {
+  fn act(&mut self, record: &mut Record) -> Result<(), Error> {
     singleton_borrow!(self.mailer).send(self.clone_email(record))
   }
 }

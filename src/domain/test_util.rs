@@ -1,17 +1,30 @@
 use crate::domain::{
-  Action, CounterData, CounterRef, CountersPort, DnatMapping, DnatMappingsPort, Filter, LogMessage,
-  LogPort, Record, Singleton, Value,
+  Action, Chain, Config, CounterData, CounterRef, CountersPort, DnatMapping, DnatMappingsPort,
+  Error, Filter, LogMessage, LogPort, Record, Singleton, Value,
 };
-use std::collections::HashMap;
+use indexmap::IndexMap;
+use std::{collections::HashMap, io::Write};
 
 pub const ACT_NAME: &str = "fake_action";
 pub const FLT_NAME: &str = "fake_filter";
 
+impl Config {
+  pub fn new(
+    actions: Option<IndexMap<String, Chain>>,
+    options: Option<HashMap<String, Value>>,
+  ) -> Config {
+    Config {
+      actions: actions.unwrap_or(IndexMap::new()),
+      options: options.unwrap_or(HashMap::new()),
+    }
+  }
+}
+
 pub struct FakeAction {}
 
 impl Action for FakeAction {
-  fn act(&mut self, record: &mut Record) -> Result<(), ()> {
-    let v = record.get(ACT_NAME).unwrap_or(&Value::Int(0));
+  fn act(&mut self, record: &mut Record) -> Result<(), Error> {
+    let v = record.get(ACT_NAME).unwrap_or(&Value::Int(0)).clone();
     match v {
       Value::Int(i) => record.insert(String::from(ACT_NAME), Value::Int(i + 1)),
       _ => panic!("The record did not contain the expected value."),
@@ -24,7 +37,7 @@ pub struct FakeFilter {}
 
 impl Filter for FakeFilter {
   fn filter(&mut self, record: &mut Record) -> bool {
-    let v = record.get(FLT_NAME).unwrap_or(&Value::Int(0));
+    let v = record.get(FLT_NAME).unwrap_or(&Value::Int(0)).clone();
     match v {
       Value::Int(i) => record.insert(String::from(FLT_NAME), Value::Int(i + 1)),
       _ => panic!("The record did not contain the expected value."),
@@ -34,12 +47,12 @@ impl Filter for FakeFilter {
 }
 
 pub struct FakeLog {
-  pub wanted_next: Vec<Result<Record, ()>>,
+  pub wanted_next: Vec<Result<Record, Error>>,
   pub last_write: Option<(String, String)>,
 }
 
 impl FakeLog {
-  pub fn new(wanted_next: Vec<Result<Record, ()>>) -> FakeLog {
+  pub fn new(wanted_next: Vec<Result<Record, Error>>) -> FakeLog {
     FakeLog {
       wanted_next,
       last_write: None,
@@ -48,24 +61,24 @@ impl FakeLog {
 }
 
 impl LogPort for FakeLog {
-  fn read_next(&mut self) -> Result<Record, ()> {
+  fn read_next(&mut self) -> Result<Record, Error> {
     if self.wanted_next.is_empty() {
-      Err(())
+      Err("ERROR!".into())
     } else {
       self.wanted_next.remove(0)
     }
   }
 
-  fn write(&mut self, message: LogMessage) -> Result<(), ()> {
+  fn write(&mut self, message: LogMessage) -> Result<(), Error> {
     self.last_write = match message {
-      LogMessage::EMERG(m) => Some(("EMERG".to_string(), m.to_string())),
-      LogMessage::ALERT(m) => Some(("ALERT".to_string(), m.to_string())),
-      LogMessage::CRIT(m) => Some(("CRIT".to_string(), m.to_string())),
-      LogMessage::ERR(m) => Some(("ERR".to_string(), m.to_string())),
-      LogMessage::WARNING(m) => Some(("WARNING".to_string(), m.to_string())),
-      LogMessage::NOTICE(m) => Some(("NOTICE".to_string(), m.to_string())),
-      LogMessage::INFO(m) => Some(("INFO".to_string(), m.to_string())),
-      LogMessage::DEBUG(m) => Some(("DEBUG".to_string(), m.to_string())),
+      LogMessage::EMERG(m) => Some(("EMERG".into(), m.into())),
+      LogMessage::ALERT(m) => Some(("ALERT".into(), m.into())),
+      LogMessage::CRIT(m) => Some(("CRIT".into(), m.into())),
+      LogMessage::ERR(m) => Some(("ERR".into(), m.into())),
+      LogMessage::WARNING(m) => Some(("WARNING".into(), m.into())),
+      LogMessage::NOTICE(m) => Some(("NOTICE".into(), m.into())),
+      LogMessage::INFO(m) => Some(("INFO".into(), m.into())),
+      LogMessage::DEBUG(m) => Some(("DEBUG".into(), m.into())),
     };
     Ok(())
   }
@@ -105,5 +118,23 @@ impl DnatMappingsPort for FakeDnatMappings {
   }
   fn get_all(&mut self) -> Vec<&DnatMapping> {
     self.mappings.iter().collect()
+  }
+}
+
+pub struct WriteProxy<'t, W: Write> {
+  inner: &'t mut W,
+}
+impl<'t, W: Write> WriteProxy<'t, W> {
+  pub fn new<'x>(inner: &'x mut W) -> WriteProxy<'x, W> {
+    WriteProxy { inner }
+  }
+}
+
+impl<'t, W: Write> Write for WriteProxy<'t, W> {
+  fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+    self.inner.write(buf)
+  }
+  fn flush(&mut self) -> std::io::Result<()> {
+    self.inner.flush()
   }
 }

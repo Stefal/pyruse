@@ -1,4 +1,6 @@
-use crate::domain::{Action, LogMessage, LogPort, ModuleArgs, Record, Singleton, Template, Value};
+use crate::domain::{
+  Action, Error, LogMessage, LogPort, ModuleArgs, Record, Singleton, Template, Value,
+};
 use crate::singleton_borrow;
 
 type LogFormat = fn(&str) -> LogMessage;
@@ -50,7 +52,7 @@ impl Log {
 }
 
 impl Action for Log {
-  fn act(&mut self, record: &mut Record) -> Result<(), ()> {
+  fn act(&mut self, record: &mut Record) -> Result<(), Error> {
     let message = self.template.format(record);
     singleton_borrow!(self.logger).write((self.log_format)(&message))
   }
@@ -60,7 +62,7 @@ impl Action for Log {
 mod tests {
   use super::Log;
   use crate::domain::test_util::FakeLog;
-  use crate::domain::{Action, ModuleArgs, Record, Singleton, Value};
+  use crate::domain::{Action, Error, ModuleArgs, Record, Singleton, Value};
   use crate::{assert_log_match, singleton_new, singleton_share};
   use core::panic;
   use std::collections::HashMap;
@@ -131,13 +133,13 @@ mod tests {
   fn create_log_logger_record(
     template: &str,
     level: Option<&str>,
-    logs: Vec<Result<Record, ()>>,
+    logs: Vec<Result<Record, Error>>,
     vars: Vec<(&str, &str)>,
   ) -> (Log, Singleton<FakeLog>, Record) {
     let mut args: ModuleArgs = HashMap::new();
-    args.insert("message".to_string(), Value::Str(template.to_string()));
+    args.insert("message".into(), Value::Str(template.to_string()));
     if let Some(l) = level {
-      args.insert("level".to_string(), Value::Str(l.to_string()));
+      args.insert("level".into(), Value::Str(l.to_string()));
     }
     let logger = singleton_new!(FakeLog::new(logs));
     let log = Log::from_args(args, singleton_share!(logger));

@@ -10,6 +10,8 @@ mod email;
 pub use self::email::*;
 mod log;
 pub use self::log::*;
+mod netfilter_ban;
+pub use self::netfilter_ban::*;
 mod noop;
 pub use self::noop::*;
 

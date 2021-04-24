@@ -111,7 +111,7 @@ fn build_chain(
     let name = chain_name
       .clone()
       .add(&format!("[{}]:{}", index, &step.module));
-    let module = Module::new(step.module, step.args, available)
+    let module = Module::new(&step.module, step.args, available)
       .expect(&format!("Module {} could not be created.", &name));
     let then_dest = step
       .then_dest
@@ -172,10 +172,7 @@ mod tests {
   #[should_panic(expected = "A configuration must have at least one module.")]
   fn empty_config_results_in_panic() {
     // Given
-    let mut conf = Config {
-      actions: IndexMap::new(),
-      options: HashMap::new(),
-    };
+    let mut conf = Config::new(None, None);
     let mods = Modules::new();
 
     // When
@@ -187,7 +184,7 @@ mod tests {
     // Given
     let mut actions: IndexMap<String, Chain> = IndexMap::new();
     actions.insert(
-      "chain1".to_string(),
+      "chain1".into(),
       vec![Step {
         module: ACT_NAME.to_string(),
         args: HashMap::new(),
@@ -195,10 +192,7 @@ mod tests {
         else_dest: None,
       }],
     );
-    let mut conf = Config {
-      actions,
-      options: HashMap::new(),
-    };
+    let mut conf = Config::new(Some(actions), None);
     let mut mods = Modules::new();
     mods.register_action(ACT_NAME.to_string(), Box::new(|_| Box::new(FakeAction {})));
     let mut record: Record = HashMap::new();
@@ -221,16 +215,16 @@ mod tests {
     // Given
     let mut actions: IndexMap<String, Chain> = IndexMap::new();
     actions.insert(
-      "chain1".to_string(),
+      "chain1".into(),
       vec![Step {
         module: FLT_NAME.to_string(),
         args: HashMap::new(),
         then_dest: None,
-        else_dest: Some("chain2".to_string()),
+        else_dest: Some("chain2".into()),
       }],
     );
     actions.insert(
-      "chain2".to_string(),
+      "chain2".into(),
       vec![Step {
         module: ACT_NAME.to_string(),
         args: HashMap::new(),
@@ -238,10 +232,7 @@ mod tests {
         else_dest: None,
       }],
     );
-    let mut conf = Config {
-      actions,
-      options: HashMap::new(),
-    };
+    let mut conf = Config::new(Some(actions), None);
     let mut mods = Modules::new();
     mods.register_action(ACT_NAME.to_string(), Box::new(|_| Box::new(FakeAction {})));
     mods.register_filter(FLT_NAME.to_string(), Box::new(|_| Box::new(FakeFilter {})));
@@ -268,7 +259,7 @@ mod tests {
     // Given
     let mut actions: IndexMap<String, Chain> = IndexMap::new();
     actions.insert(
-      "chain1".to_string(),
+      "chain1".into(),
       vec![Step {
         module: FLT_NAME.to_string(),
         args: HashMap::new(),
@@ -277,7 +268,7 @@ mod tests {
       }],
     );
     actions.insert(
-      "chain2".to_string(),
+      "chain2".into(),
       vec![Step {
         module: ACT_NAME.to_string(),
         args: HashMap::new(),
@@ -285,10 +276,7 @@ mod tests {
         else_dest: None,
       }],
     );
-    let mut conf = Config {
-      actions,
-      options: HashMap::new(),
-    };
+    let mut conf = Config::new(Some(actions), None);
     let mut mods = Modules::new();
     mods.register_action(ACT_NAME.to_string(), Box::new(|_| Box::new(FakeAction {})));
     mods.register_filter(FLT_NAME.to_string(), Box::new(|_| Box::new(FakeFilter {})));

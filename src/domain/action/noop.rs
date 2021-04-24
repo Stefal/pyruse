@@ -1,4 +1,4 @@
-use crate::domain::{Action, ModuleArgs, Record};
+use crate::domain::{Action, Error, ModuleArgs, Record};
 
 pub struct Noop {}
 
@@ -9,7 +9,7 @@ impl Noop {
 }
 
 impl Action for Noop {
-  fn act(&mut self, _record: &mut Record) -> Result<(), ()> {
+  fn act(&mut self, _record: &mut Record) -> Result<(), Error> {
     Ok(())
   }
 }

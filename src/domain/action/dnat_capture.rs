@@ -1,5 +1,7 @@
 use super::{get_acceptable_key, remove_acceptable_key};
-use crate::domain::{Action, DnatMapping, DnatMappingsPort, ModuleArgs, Record, Singleton, Value};
+use crate::domain::{
+  Action, DnatMapping, DnatMappingsPort, Error, ModuleArgs, Record, Singleton, Value,
+};
 use crate::singleton_borrow;
 use chrono::{Duration, Utc};
 
@@ -69,7 +71,7 @@ impl DnatCapture {
 }
 
 impl Action for DnatCapture {
-  fn act(&mut self, record: &mut Record) -> Result<(), ()> {
+  fn act(&mut self, record: &mut Record) -> Result<(), Error> {
     let src_addr = value_for(&self.specs.src_addr, record);
     let internal_addr = value_for(&self.specs.internal_addr, record);
     if src_addr == None || internal_addr == None {
@@ -117,7 +119,7 @@ mod tests {
     let mappings = singleton_new!(FakeDnatMappings {
       mappings: Vec::new()
     });
-    args.insert("addr".to_string(), Value::Str("int_ip".to_string()));
+    args.insert("addr".into(), Value::Str("int_ip".into()));
     let _ = DnatCapture::from_args(args, singleton_share!(mappings));
   }
 
@@ -130,7 +132,7 @@ mod tests {
     let mappings = singleton_new!(FakeDnatMappings {
       mappings: Vec::new()
     });
-    args.insert("saddr".to_string(), Value::Str("src_ip".to_string()));
+    args.insert("saddr".into(), Value::Str("src_ip".into()));
     let _ = DnatCapture::from_args(args, singleton_share!(mappings));
   }
 
@@ -140,8 +142,8 @@ mod tests {
     let mappings = singleton_new!(FakeDnatMappings {
       mappings: Vec::new()
     });
-    args.insert("saddr".to_string(), Value::Str("src_ip".to_string()));
-    args.insert("addrValue".to_string(), Value::Str("1.2.3.4".to_string()));
+    args.insert("saddr".into(), Value::Str("src_ip".into()));
+    args.insert("addrValue".into(), Value::Str("1.2.3.4".into()));
     let _ = DnatCapture::from_args(args, singleton_share!(mappings));
     assert!(true);
   }
@@ -152,8 +154,8 @@ mod tests {
     let mappings = singleton_new!(FakeDnatMappings {
       mappings: Vec::new()
     });
-    args.insert("saddr".to_string(), Value::Str("src_ip".to_string()));
-    args.insert("addr".to_string(), Value::Str("int_ip".to_string()));
+    args.insert("saddr".into(), Value::Str("src_ip".into()));
+    args.insert("addr".into(), Value::Str("int_ip".into()));
     let _ = DnatCapture::from_args(args, singleton_share!(mappings));
     assert!(true);
   }
@@ -164,8 +166,8 @@ mod tests {
     let mappings = singleton_new!(FakeDnatMappings {
       mappings: Vec::new()
     });
-    args.insert("saddr".to_string(), Value::Str("src_ip".to_string()));
-    args.insert("addr".to_string(), Value::Str("int_ip".to_string()));
+    args.insert("saddr".into(), Value::Str("src_ip".into()));
+    args.insert("addr".into(), Value::Str("int_ip".into()));
     let action = DnatCapture::from_args(args, singleton_share!(mappings));
     assert_eq!(Duration::seconds(63), action.specs.keep_duration);
   }
@@ -176,8 +178,8 @@ mod tests {
     let mappings = singleton_new!(FakeDnatMappings {
       mappings: Vec::new()
     });
-    args.insert("saddr".to_string(), Value::Str("src_ip".to_string()));
-    args.insert("addr".to_string(), Value::Str("int_ip".to_string()));
+    args.insert("saddr".into(), Value::Str("src_ip".into()));
+    args.insert("addr".into(), Value::Str("int_ip".into()));
     let mut action = DnatCapture::from_args(args, singleton_share!(mappings));
     action.act(&mut HashMap::new()).unwrap();
     assert_eq!(0, singleton_borrow!(mappings).mappings.len());
@@ -194,19 +196,19 @@ mod tests {
     });
 
     // specify the Action
-    args.insert("saddr".to_string(), Value::Str("sa".to_string()));
+    args.insert("saddr".into(), Value::Str("sa".into()));
 
     // prepare the entry
     let mut entry: Record = HashMap::with_capacity(6);
-    entry.insert("sa".to_string(), Value::Str("vsa".to_string()));
-    entry.insert("sp".to_string(), Value::Str("vsp".to_string()));
+    entry.insert("sa".into(), Value::Str("vsa".into()));
+    entry.insert("sp".into(), Value::Str("vsp".into()));
     if entry_with_addr {
-      entry.insert("a".to_string(), Value::Str("va".to_string()));
-      entry.insert("p".to_string(), Value::Str("vp".to_string()));
+      entry.insert("a".into(), Value::Str("va".into()));
+      entry.insert("p".into(), Value::Str("vp".into()));
     }
     if entry_with_daddr {
-      entry.insert("da".to_string(), Value::Str("vda".to_string()));
-      entry.insert("dp".to_string(), Value::Str("vdp".to_string()));
+      entry.insert("da".into(), Value::Str("vda".into()));
+      entry.insert("dp".into(), Value::Str("vdp".into()));
     }
 
     // run
@@ -301,7 +303,7 @@ mod tests {
     dest_port: Option<&str>,
   ) -> DnatMapping {
     DnatMapping {
-      src_addr: Some("vsa".to_string()),
+      src_addr: Some("vsa".into()),
       src_port: src_port.map(|s| s.to_string()),
       internal_addr: internal_addr.map(|s| s.to_string()),
       internal_port: internal_port.map(|s| s.to_string()),

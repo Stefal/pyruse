@@ -20,7 +20,9 @@ pub use self::workflow::*;
 
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
+use std::convert::From;
 use std::hash::{Hash, Hasher};
+use std::string::ToString;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Value {
@@ -42,6 +44,18 @@ impl Hash for Value {
       Value::Map(h) => h.keys().collect::<Vec<&String>>().sort().hash(state),
       Value::List(v) => v.hash(state),
     };
+  }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Error {
+  pub message: String,
+}
+impl<T: ToString> From<T> for Error {
+  fn from(err: T) -> Self {
+    Error {
+      message: err.to_string(),
+    }
   }
 }
 
@@ -70,4 +84,4 @@ macro_rules! singleton_borrow {
 }
 
 #[cfg(test)]
-mod test_util;
+pub mod test_util;

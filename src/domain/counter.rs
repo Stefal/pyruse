@@ -143,7 +143,7 @@ mod tests {
   #[test]
   fn augment_raises_a_counter_by_its_amount() {
     let (_, mut counters) = get_store_counters();
-    let str_value = Value::Str("string".to_string());
+    let str_value = Value::Str("string".into());
     counters.set(("test", &str_value), (4, None));
     let value = counters.augment(("test", &str_value), (3, None));
     assert_eq!(value, 7);

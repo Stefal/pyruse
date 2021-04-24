@@ -1,4 +1,6 @@
+use super::Error;
 use std::convert::TryFrom;
+use std::string::ToString;
 
 #[derive(Clone)]
 pub struct EmailData {
@@ -17,15 +19,16 @@ impl EmailData {
 }
 
 pub trait EmailPort {
-  fn send(&mut self, email: EmailData) -> Result<(), ()>;
+  fn send(&mut self, email: EmailData) -> Result<(), Error>;
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct EmailAddress {
   as_string: String,
 }
-impl EmailAddress {
-  pub fn to_string(&self) -> String {
+
+impl ToString for EmailAddress {
+  fn to_string(&self) -> String {
     self.as_string.clone()
   }
 }
@@ -42,12 +45,12 @@ impl Clone for EmailAddress {
 }
 
 impl TryFrom<String> for EmailAddress {
-  type Error = ();
-  fn try_from(as_string: String) -> Result<Self, Self::Error> {
+  type Error = Error;
+  fn try_from(as_string: String) -> Result<Self, Error> {
     if is_address_valid(&as_string) {
       Ok(EmailAddress { as_string })
     } else {
-      Err(())
+      Err(format!("Email {} is invalid", as_string).into())
     }
   }
 }
@@ -447,6 +450,9 @@ mod tests {
   }
 
   fn assert_invalid(addr: &str) {
-    assert_eq!(Err(()), EmailAddress::try_from(addr.to_string()));
+    assert_eq!(
+      Err(format!("Email {} is invalid", addr).into()),
+      EmailAddress::try_from(addr.to_string())
+    );
   }
 }

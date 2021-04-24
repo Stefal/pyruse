@@ -1,9 +1,9 @@
 use crate::domain::{Chain, Config, ConfigPort, ModuleArgs, Step, Value};
+use crate::infra::file::DataFile;
+use crate::infra::serde::Input;
 use indexmap::IndexMap;
 use serde::de::{self, Deserializer, MapAccess, SeqAccess, Visitor};
 use serde::Deserialize;
-use serde_json;
-use serde_yaml;
 use std::collections::HashMap;
 use std::fmt;
 use std::io::Read;
@@ -15,45 +15,48 @@ pub struct SerdeConfigAdapter {
   config: Config,
 }
 
-impl SerdeConfigAdapter {
-  pub fn from_json(data: impl Read) -> SerdeConfigAdapter {
-    let serde_config: SerdeConfig =
-      serde_json::from_reader(data).expect("Failed to parse configuration");
-    SerdeConfigAdapter::from_serde(serde_config)
+impl From<DataFile> for SerdeConfigAdapter {
+  fn from(datafile: DataFile) -> Self {
+    datafile
+      .open_r()
+      .expect("Failed to read the configuration file")
+      .into()
   }
-  pub fn from_yaml(data: impl Read) -> SerdeConfigAdapter {
-    let serde_config: SerdeConfig =
-      serde_yaml::from_reader(data).expect("Failed to parse configuration");
-    SerdeConfigAdapter::from_serde(serde_config)
-  }
+}
 
-  fn from_serde(mut data: SerdeConfig) -> SerdeConfigAdapter {
-    SerdeConfigAdapter {
-      config: Config {
-        actions: data
-          .actions
-          .drain(..)
-          .map(|(name, mut serde_chain)| {
-            (
-              name,
-              serde_chain
-                .drain(..)
-                .map(|step| Step {
-                  module: match step.module {
-                    StepType::Action(s) => s,
-                    StepType::Filter(s) => s,
-                  },
-                  args: step.args,
-                  then_dest: step.then_dest,
-                  else_dest: step.else_dest,
-                })
-                .collect::<Chain>(),
-            )
-          })
-          .collect::<IndexMap<String, Chain>>(),
-        options: data.options,
-      },
-    }
+impl<R: Read> From<Input<R>> for SerdeConfigAdapter {
+  fn from(data: Input<R>) -> Self {
+    let serde_conf = data.parse().expect("Failed to parse configuration");
+    from_serde(serde_conf)
+  }
+}
+
+fn from_serde(mut data: SerdeConfig) -> SerdeConfigAdapter {
+  SerdeConfigAdapter {
+    config: Config {
+      actions: data
+        .actions
+        .drain(..)
+        .map(|(name, mut serde_chain)| {
+          (
+            name,
+            serde_chain
+              .drain(..)
+              .map(|step| Step {
+                module: match step.module {
+                  StepType::Action(s) => s,
+                  StepType::Filter(s) => s,
+                },
+                args: step.args,
+                then_dest: step.then_dest,
+                else_dest: step.else_dest,
+              })
+              .collect::<Chain>(),
+          )
+        })
+        .collect::<IndexMap<String, Chain>>(),
+      options: data.options,
+    },
   }
 }
 
@@ -198,7 +201,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
   where
     E: de::Error,
   {
-    Ok(Value::Str(v.to_string()))
+    Ok(Value::Str(v.into()))
   }
 
   fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -229,7 +232,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     Ok(Value::Str(
       std::str::from_utf8(v)
         .expect("Strings in the configuration must be UTF-8")
-        .to_string(),
+        .into(),
     ))
   }
 
@@ -240,7 +243,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     Ok(Value::Str(
       std::str::from_utf8(v)
         .expect("Strings in the configuration must be UTF-8")
-        .to_string(),
+        .into(),
     ))
   }
 
@@ -290,7 +293,8 @@ impl<'de> Deserialize<'de> for Value {
 #[cfg(test)]
 mod tests {
   use super::SerdeConfigAdapter;
-  use crate::domain::Value;
+  use crate::domain::{Config, Value};
+  use crate::infra::serde::Input;
 
   #[test]
   fn parse_json_works() {
@@ -321,9 +325,48 @@ mod tests {
     "#.as_bytes();
 
     // When
-    let conf = SerdeConfigAdapter::from_json(json).config;
+    let conf = SerdeConfigAdapter::from(Input::Json(json)).config;
 
     // Then
+    assert_right_contents(conf);
+  }
+
+  #[test]
+  fn parse_yaml_works() {
+    // Given
+    let yaml = r#"---
+    actions:
+      Detect request errors with Nextcloud:
+      - filter: filter_equals
+        args:
+          field: SYSLOG_IDENTIFIER
+          value: uwsgi
+      - filter: filter_pcre
+        args:
+          field: MESSAGE
+          re: "^\\[[^]]+\\] ([^ ]+) .*\\] ([A-Z]+ /[^?]*)(?:\\?.*)? => .*\\(HTTP/1.1 5..\\)"
+          save:
+          - thatIP
+          - HTTPrequest
+        else: "… Report insufficient buffer-size for Nextcloud QUERY_STRING"
+      - action: action_dailyReport
+        args:
+          level: INFO
+          message: IP {thatIP} failed to {HTTPrequest} on Nextcloud
+          details: FIRSTLAST
+      "… Report insufficient buffer-size for Nextcloud QUERY_STRING": []
+    debug: false    
+    "#
+    .as_bytes();
+
+    // When
+    let conf = SerdeConfigAdapter::from(Input::Yaml(yaml)).config;
+
+    // Then
+    assert_right_contents(conf);
+  }
+
+  fn assert_right_contents(conf: Config) {
     assert_eq!(conf.actions.len(), 2);
     assert_eq!(
       conf.actions.get_index(0).unwrap().0,

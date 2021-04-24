@@ -1,6 +1,5 @@
-use crate::domain::{Record, Value};
+use crate::domain::{Error, Record, Value};
 use std::collections::HashMap;
-
 pub type ActionConstructor = Box<dyn Fn(ModuleArgs) -> Box<dyn Action>>;
 pub type FilterConstructor = Box<dyn Fn(ModuleArgs) -> Box<dyn Filter>>;
 
@@ -32,29 +31,26 @@ pub enum Module {
 }
 
 impl Module {
-  pub fn new(name: String, args: ModuleArgs, available: &Modules) -> Result<Module, ()> {
-    if let Some(a) = available.available_actions.get(&name) {
+  pub fn new(name: &str, args: ModuleArgs, available: &Modules) -> Result<Module, Error> {
+    if let Some(a) = available.available_actions.get(name) {
       Ok(Module::Action(a(args)))
-    } else if let Some(f) = available.available_filters.get(&name) {
+    } else if let Some(f) = available.available_filters.get(name) {
       Ok(Module::Filter(f(args)))
     } else {
-      Err(())
+      Err(format!("Module {} does not exist", name).into())
     }
   }
 
-  pub fn run(&mut self, record: &mut Record) -> Result<bool, ()> {
+  pub fn run(&mut self, record: &mut Record) -> Result<bool, Error> {
     match self {
-      Module::Action(a) => match a.act(record) {
-        Ok(()) => Ok(true),
-        Err(()) => Err(()),
-      },
+      Module::Action(a) => a.act(record).map(|_| true),
       Module::Filter(f) => Ok(f.filter(record)),
     }
   }
 }
 
 pub trait Action {
-  fn act(&mut self, record: &mut Record) -> Result<(), ()>;
+  fn act(&mut self, record: &mut Record) -> Result<(), Error>;
 }
 
 pub trait Filter {
@@ -77,10 +73,10 @@ mod tests {
     let mut record: Record = HashMap::new();
 
     // When
-    let mut module = Module::new(ACT_NAME.to_string(), HashMap::new(), &mods).unwrap();
+    let mut module = Module::new(ACT_NAME, HashMap::new(), &mods).unwrap();
 
     // Then
-    assert_eq!(module.run(&mut record), Ok(true));
+    assert_eq!(Ok(true), module.run(&mut record));
     assert!(record.contains_key(ACT_NAME));
     assert_eq!(record[ACT_NAME], Value::Int(1));
   }
@@ -93,10 +89,10 @@ mod tests {
     let mut record: Record = HashMap::new();
 
     // When
-    let mut module = Module::new(FLT_NAME.to_string(), HashMap::new(), &mods).unwrap();
+    let mut module = Module::new(FLT_NAME, HashMap::new(), &mods).unwrap();
 
     // Then
-    assert_eq!(module.run(&mut record), Ok(false));
+    assert_eq!(Ok(false), module.run(&mut record));
     assert!(record.contains_key(FLT_NAME));
     assert_eq!(record[FLT_NAME], Value::Int(1));
   }

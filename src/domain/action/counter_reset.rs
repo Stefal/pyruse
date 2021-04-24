@@ -1,5 +1,5 @@
 use super::CounterAction;
-use crate::domain::{Action, Counters, CountersPort, ModuleArgs, Record, Singleton, Value};
+use crate::domain::{Action, Counters, CountersPort, Error, ModuleArgs, Record, Singleton, Value};
 use crate::singleton_borrow;
 use chrono::Utc;
 
@@ -19,9 +19,10 @@ impl<C: CountersPort> CounterReset<C> {
 }
 
 impl<C: CountersPort> Action for CounterReset<C> {
-  fn act(&mut self, record: &mut Record) -> Result<(), ()> {
-    match record.get(&self.act.counter_key) {
-      None => Err(()),
+  fn act(&mut self, record: &mut Record) -> Result<(), Error> {
+    let k = &self.act.counter_key;
+    match record.get(k) {
+      None => Err(format!("Key {} not found in the log entry", k).into()),
       Some(v) => {
         let count = singleton_borrow!(self.act.counters).reset(
           (self.act.counter_name.as_ref(), v),
@@ -49,11 +50,8 @@ mod tests {
   fn when_reset_without_gracetime_then_count_is_0_and_counter_removed() {
     let (counters, mut action) = get_counters_action(None);
     let mut record = HashMap::with_capacity(1);
-    record.insert("k".to_string(), Value::Str("reset#1".to_string()));
-    singleton_borrow!(counters).insert(
-      ("test".to_string(), Value::Str("reset#1".to_string())),
-      (5, None),
-    );
+    record.insert("k".into(), Value::Str("reset#1".into()));
+    singleton_borrow!(counters).insert(("test".into(), Value::Str("reset#1".into())), (5, None));
 
     action.act(&mut record).unwrap();
     assert_eq!(Some(&Value::Int(0)), record.get("reset"));
@@ -64,14 +62,14 @@ mod tests {
   fn when_reset_with_gracetime_then_count_is_0_and_gracetime_is_stored() {
     let (counters, mut action) = get_counters_action(Some(5));
     let mut record = HashMap::with_capacity(1);
-    record.insert("k".to_string(), Value::Str("reset#2".to_string()));
+    record.insert("k".into(), Value::Str("reset#2".into()));
 
     let almost = Utc::now() + Duration::seconds(5);
     let after = almost + Duration::seconds(1);
     action.act(&mut record).unwrap();
     assert_eq!(Some(&Value::Int(0)), record.get("reset"));
     let (c, od) = *(singleton_borrow!(counters)
-      .get(&("test".to_string(), Value::Str("reset#2".to_string())))
+      .get(&("test".into(), Value::Str("reset#2".into())))
       .unwrap());
     let d = od.unwrap();
     assert!(d >= almost);
@@ -91,11 +89,11 @@ mod tests {
         counters: singleton_share!(counters)
       }));
     let mut args = HashMap::with_capacity(grace_time.map(|_| 4).unwrap_or(3));
-    args.insert("counter".to_string(), Value::Str("test".to_string()));
-    args.insert("for".to_string(), Value::Str("k".to_string()));
-    args.insert("save".to_string(), Value::Str("reset".to_string()));
+    args.insert("counter".into(), Value::Str("test".into()));
+    args.insert("for".into(), Value::Str("k".into()));
+    args.insert("save".into(), Value::Str("reset".into()));
     if let Some(sec) = grace_time {
-      args.insert("graceSeconds".to_string(), Value::Int(sec));
+      args.insert("graceSeconds".into(), Value::Int(sec));
     }
     let action = CounterReset::<FakeCountersAdapter>::from_args(args, counters_backend);
     (counters, action)

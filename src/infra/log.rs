@@ -1,4 +1,4 @@
-use crate::domain::{LogMessage, LogPort, Record, Value};
+use crate::domain::{Error, LogMessage, LogPort, Record, Value};
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::iter::FromIterator;
@@ -24,28 +24,23 @@ pub struct SystemdLogAdapter {
 }
 
 impl SystemdLogAdapter {
-  pub fn open() -> Result<Self, ()> {
-    let mappers = create_mappers();
-    if let Ok(mut journal) = OpenOptions::default()
+  pub fn open() -> Result<Self, Error> {
+    let mut journal = OpenOptions::default()
       .system(true)
       .current_user(false)
       .local_only(false)
-      .open()
-    {
-      if let Ok(_) = journal.seek_tail() {
-        return Ok(SystemdLogAdapter { journal, mappers });
-      }
-    }
-    Err(())
+      .open()?;
+    journal.seek_tail()?;
+    let mappers = create_mappers();
+    Ok(SystemdLogAdapter { journal, mappers })
   }
 }
 
 impl LogPort for SystemdLogAdapter {
-  fn read_next(&mut self) -> Result<Record, ()> {
+  fn read_next(&mut self) -> Result<Record, Error> {
     loop {
-      match self.journal.await_next_entry(None) {
-        Err(_) => return Err(()),
-        Ok(Some(mut entry)) => {
+      match self.journal.await_next_entry(None)? {
+        Some(mut entry) => {
           let mut record: Record = HashMap::with_capacity(entry.len());
           let all_keys = entry.keys().map(|s| s.clone()).collect::<Vec<String>>();
           for k in all_keys {
@@ -58,12 +53,12 @@ impl LogPort for SystemdLogAdapter {
           }
           return Ok(record);
         }
-        Ok(None) => continue,
+        None => continue,
       };
     }
   }
 
-  fn write(&mut self, message: LogMessage) -> Result<(), ()> {
+  fn write(&mut self, message: LogMessage) -> Result<(), Error> {
     let unix_status = match message {
       LogMessage::EMERG(m) => print(0, m),
       LogMessage::ALERT(m) => print(1, m),
@@ -76,7 +71,7 @@ impl LogPort for SystemdLogAdapter {
     };
     match unix_status {
       0 => Ok(()),
-      _ => Err(()),
+      _ => Err("Writing the systemd log resulted in a non-zero status".into()),
     }
   }
 }
@@ -151,7 +146,7 @@ fn create_mappers<'t>() -> HashMap<String, JournalFieldMapper> {
       ("__MONOTONIC_TIMESTAMP", DATE_MAPPER),
     ]
     .iter()
-    .map(|(s, m)| (s.to_string(), m.to_owned())),
+    .map(|(s, m)| ((*s).into(), m.to_owned())),
   );
   map
 }
