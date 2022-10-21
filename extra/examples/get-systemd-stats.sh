@@ -6,10 +6,10 @@ CRIT=${1:-SYSLOG_IDENTIFIER}
 shift
 
 {
-	printf '%s\tTotal\tP7\tP6\tP5\tP4\tP3\tP2\tP1\tP0\n' $CRIT
-	sudo journalctl "$@" -o json-pretty --output-fields=${CRIT},PRIORITY \
+	printf '%s\tTotal\tP7\tP6\tP5\tP4\tP3\tP2\tP1\tP0\n' "$CRIT"
+	sudo journalctl "$@" -o json-pretty --output-fields="${CRIT}",PRIORITY \
 	| tr -d $'"\t, ' \
-	| awk -F: -vOFS=: -vCRIT=$CRIT '
+	| awk -F: -vOFS=: -vCRIT="$CRIT" '
 		/^\{/ {
 			u = ""
 			p = -1
