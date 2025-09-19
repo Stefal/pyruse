@@ -1,0 +1,93 @@
+{
+  "actions": {
+    "Detect password errors with caster.centipede.fr": [
+			{
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "str2str_ntrip_A" }
+			},
+      {
+        "filter": "filter_pcre",
+        "args": { "field": "MESSAGE", "re": "(\\[.W).*(ERROR - Bad Password)" }
+      },
+      {
+        "action": "action_killService",
+        "args": {"service_name": "{SYSLOG_IDENTIFIER}"}
+      },
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "erreur de password {SYSLOG_IDENTIFIER}", "details": "ALL" }
+			}
+		],
+    "Detect GNSS receiver disconnection": [
+      {
+				"filter": "filter_equals",
+				"args": { "field": "SYSLOG_IDENTIFIER", "value": "str2str_tcp" }
+			},
+      {
+        "filter": "filter_pcre",
+        "args": { "field": "MESSAGE", "re": "(\\s0\\sbps)", "save": ["disconnected"] }
+      },
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "INFO", "message": "Serial disconnection {SYSLOG_IDENTIFIER}", "details": "ALL" },
+        "then": "… Detect repeated 0bps on str2str_tcp"
+			}
+    ],
+    "… Detect repeated 0bps on str2str_tcp": [
+      {
+          "action": "action_counterRaise",
+          "args": { "counter": "disco", "for": "disconnected", "keepSeconds": 600, "save": "0bps"}
+      },
+      {
+          "filter": "filter_greaterOrEquals",
+          "args": { "field": "0bps", "value": 2},
+          "else": "… NOOP"
+      },
+      {
+        "action": "action_killService",
+        "args": {"service_name": "{SYSLOG_IDENTIFIER}"}
+      },
+      {
+        "action": "action_counterReset",
+        "args": { "counter": "disco", "for": "disconnected"}
+      },
+			{
+				"action": "action_dailyReport",
+				"args": { "level": "WARN", "message": "Service stopped due to too many disconnection {SYSLOG_IDENTIFIER}", "details": "ALL" }
+			}
+    ],
+    "Immediately warn of fatal errors": [
+      {
+        "filter": "filter_lowerOrEquals",
+        "args": { "field": "PRIORITY", "value": 1 }
+      },
+      {
+        "action": "action_email",
+        "args": { "subject": "Pyruse", "message": "Error on {_HOSTNAME} on {__REALTIME_TIMESTAMP}:\n{MESSAGE}" }
+      }
+    ],
+    "Discard info entries": [
+      {
+        "filter": "filter_greaterOrEquals",
+        "args": { "field": "PRIORITY", "value": 4 }
+      },
+      {
+        "action": "action_noop"
+      }
+    ],
+    "Report everything else": [
+      {
+        "action": "action_dailyReport",
+        "args": { "level": "OTHER", "message": "[{PRIORITY}] {_SYSTEMD_UNIT}/{_HOSTNAME}: {MESSAGE}" }
+      }
+    ],
+    "… NOOP": [
+			{
+				"action": "action_noop"
+			}
+		]
+  },
+  "8bit-message-encoding": "iso-8859-1",
+  "storage": "/home/basegnss/pyruse",
+  "debug": false
+}
