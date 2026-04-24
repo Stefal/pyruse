@@ -2,6 +2,20 @@
 
 ## str2str_tcp
 
+### str2str_tcp avec un récepteur non connecté, ou mauvais port série
+Apr 24 09:49:56 basegnss str2str_tcp[572700]: stream server start
+Apr 24 09:49:56 basegnss str2str_tcp[572700]: stream server start error
+Apr 24 09:50:26 basegnss str2str_tcp[572943]: stream server start
+Apr 24 09:50:26 basegnss str2str_tcp[572943]: stream server start error
+Apr 24 09:50:56 basegnss str2str_tcp[573186]: stream server start
+Apr 24 09:50:56 basegnss str2str_tcp[573186]: stream server start error
+== Connexion du récepteur
+Apr 24 09:52:27 basegnss str2str_tcp[573968]: 2026/04/24 09:52:45 [CW---]          0 B       0 bps (0) /dev/ttyUSB0 (1) waiting...
+Apr 24 09:52:32 basegnss str2str_tcp[573968]: 2026/04/24 09:52:50 [CW---]          0 B       0 bps (0) /dev/ttyUSB0 (1) waiting...
+Apr 24 09:53:03 basegnss str2str_tcp[573968]: 2026/04/24 09:53:21 [CW---]          0 B       0 bps (0) /dev/ttyUSB0 (1) waiting...
+Apr 24 09:53:08 basegnss str2str_tcp[573968]: 2026/04/24 09:53:26 [CW---]       9575 B   15289 bps (0) /dev/ttyUSB0 (1) waiting...
+Apr 24 09:53:13 basegnss str2str_tcp[573968]: 2026/04/24 09:53:31 [CW---]      19430 B   15920 bps (0) /dev/ttyUSB0 (1) waiting...
+
 ### str2str_tcp qui perd la connexion avec le récepteur
 ```
 Sep 18 16:02:12 basegnss run_cast.sh[351714]: 2025/09/18 16:02:30 [CC---]  384257636 B   39534 bps (0) /dev/ttyGNSS (1) 127.0.0.1
@@ -15,8 +29,7 @@ Sep 18 16:05:12 basegnss run_cast.sh[351714]: 2025/09/18 16:05:30 [CW---]  38460
 
 ### str2str_tcp avec un F9P qui n'a pas de câble antenne
 ```
-Sep 18 16:20:49 basegnss str2str_tcp[444711]: 2025/09/18 16:21:08 [CC---]     501772 B   14438 bps (0) /dev/ttyGNSS (1) 127.0.0.1
-Sep 18 16:20:54 basegnss str2str_tcp[444711]: 2025/09/18 16:21:13 [CC---]     510856 B   14501 bps (0) /dev/ttyGNSS (1) 127.0.0.1
+TODO
 ```
 
 ### Démarrage de str2str_tcp à "froid" sans limites sur les logs
@@ -72,3 +85,32 @@ Sep 19 15:09:37 basegnss str2str_ntrip_A[698976]: 2025/09/19 15:09:56 [CC---]   
 Sep 19 15:09:07 basegnss str2str_ntrip_A[698976]: 2025/09/19 15:09:26 [CW---]    1580012 B   45262 bps (0) localhost (1) ERROR - Mount Point Taken or Inv
 Sep 19 15:09:12 basegnss str2str_ntrip_A[698976]: 2025/09/19 15:09:31 [CW---]    1609596 B   45409 bps (0) localhost (1) ERROR - Mount Point Taken or Inv
 ```
+
+## Variables disponibles pour le service en cours de traitement par Pyruse : 
+{
+'_TRANSPORT': 'stdout', 
+'PRIORITY': 6,
+'SYSLOG_FACILITY': 3,
+'_UID': 1000,
+'_GID': 1000,
+'_COMM': 'str2str',
+'_EXE': '/usr/local/bin/str2str',
+'_CAP_EFFECTIVE': '0',
+'_SYSTEMD_SLICE': 'system.slice',
+'_MACHINE_ID': UUID('86948bd5-e145-43cc-92d4-e78a92348911'),
+'_HOSTNAME': 'basegnss',
+'_NAMESPACE': 'rtkbase_log',
+'_RUNTIME_SCOPE': 'system',
+'SYSLOG_IDENTIFIER': 'str2str_ntrip_A',
+'_SYSTEMD_CGROUP': '/system.slice/str2str_ntrip_A.service',
+'_SYSTEMD_UNIT': 'str2str_ntrip_A.service',
+'_BOOT_ID': UUID('8f497acd-bc7c-4c2a-9f57-06c5b7bc18bc'),
+'_STREAM_ID': '007bac1557a645879347a15011dd450b',
+'_PID': 568588,
+'_CMDLINE': '/usr/local/bin/str2str -in tcpcli://localhost:5015#rtcm3 -msg "1004,1005(10),1006,1008(10),1012,1019,1020,1033(10),1042,1045,1046,1077,1087,1097,1107,1127,1230" -out ntrips://:centipeded@castertest.rtkbase.eu:2101/TEST#rtcm3 -p 47.0983869 -1.2655108 36.40 -i "RTKBase Unicore_UM980,2.7.0 R4.10Build17548" -a ADVNULLANTENNA -t 0 -fl /home/basegnss/rtkbase/logs/str2str_ntrip_A.log',
+'_SYSTEMD_INVOCATION_ID': '0461b904133141c593891bc70e4136e5',
+'MESSAGE': '2026/04/24 09:41:54 [CW---]      10782 B   15852 bps (0) localhost (1) ERROR - Bad Password',
+'__REALTIME_TIMESTAMP': datetime.datetime(2026, 4, 24, 9, 41, 36, 40159, tzinfo=datetime.timezone(datetime.timedelta(0), 'UTC')),
+'__MONOTONIC_TIMESTAMP': journal.Monotonic(timestamp=datetime.timedelta(days=3, seconds=7822, microseconds=659690),
+bootid=UUID('8f497acd-bc7c-4c2a-9f57-06c5b7bc18bc')),
+'__CURSOR': 's=60d27faac8a149c589c9c41ef48e85c7;i=2f14d;b=8f497acdbc7c4c2a9f5706c5b7bc18bc;m=3e2bca706a;t=650319228f0df;x=bf5546ebb5c7a351'}
