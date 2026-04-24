@@ -1,16 +1,23 @@
 {
   "actions": {
-    "Detect password errors with caster.centipede.fr": [
+    "Detect Ntrip caster authentication errors": [
 			{
-				"filter": "filter_equals",
-				"args": { "field": "SYSLOG_IDENTIFIER", "value": "str2str_ntrip_A" }
+				"filter": "filter_pcre",
+				"args": { "field": "SYSLOG_IDENTIFIER", "re": "str2str_ntrip_*" }
 			},
       {
         "filter": "filter_pcre",
-        "args": { "field": "MESSAGE", "re": "(\\[.W).*(ERROR - Bad Password)" }
+        "args": { "field": "MESSAGE", "re": "\\[[A-Z]W[^\\]]*\\].*ERROR - Bad Password" }
       },
       {
-        "action": "action_killService",
+        "action": "action_log",
+        "args": {
+        "level": "CRIT",
+        "message": "{SYSLOG_IDENTIFIER} - ID {_SYSTEMD_INVOCATION_ID} - Wrong caster password"
+        }
+      },
+      {
+        "action": "action_stopService",
         "args": {"service_name": "{SYSLOG_IDENTIFIER}"}
       },
 			{
@@ -31,7 +38,14 @@
 				"action": "action_dailyReport",
 				"args": { "level": "INFO", "message": "Serial disconnection {SYSLOG_IDENTIFIER}", "details": "ALL" },
         "then": "… Detect repeated 0bps on str2str_tcp"
-			}
+			},
+      {
+        "action": "action_log",
+        "args": {
+        "level": "CRIT",
+        "message": "{SYSLOG_IDENTIFIER}: GNSS receiver or GNSS antenna disconnection."
+        }
+      }
     ],
     "… Detect repeated 0bps on str2str_tcp": [
       {
@@ -40,7 +54,7 @@
       },
       {
           "filter": "filter_greaterOrEquals",
-          "args": { "field": "0bps", "value": 2},
+          "args": { "field": "0bps", "value": 5},
           "else": "… NOOP"
       },
       {
@@ -54,7 +68,14 @@
 			{
 				"action": "action_dailyReport",
 				"args": { "level": "WARN", "message": "Service stopped due to too many disconnection {SYSLOG_IDENTIFIER}", "details": "ALL" }
-			}
+			},
+      {
+        "action": "action_log",
+        "args": {
+        "level": "CRIT",
+        "message": "{SYSLOG_IDENTIFIER}: GNSS receiver stream rate is too low. Check your antenna"
+        }
+      }
     ],
     "Immediately warn of fatal errors": [
       {
@@ -88,6 +109,6 @@
 		]
   },
   "8bit-message-encoding": "iso-8859-1",
-  "storage": "/home/basegnss/pyruse",
+  "storage": "/var/lib/pyruse",
   "debug": false
 }
