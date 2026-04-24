@@ -4,6 +4,7 @@
 import os
 import sys
 from systemd import journal
+from systemd import id128
 from pyruse import config, module, workflow
 
 PYRUSE_ENVVAR = "PYRUSE_EXTRA"
@@ -17,9 +18,16 @@ def _setPyrusePaths():
             sys.path.insert(1, p)
     PYRUSE_PATHS.insert(0, os.curdir)
 
+def _setJournalDirectory(journalDirectory):
+    global JOURNAL_PATH
+    JOURNAL_DIRNAME = str(id128.get_machine().hex) + "." + journalDirectory
+    JOURNAL_PATH = os.path.join("/var/log/journal/", JOURNAL_DIRNAME)
+    return JOURNAL_PATH
+
 def _doForEachJournalEntry(workflow):
     enc8b = config.Config().asMap().get("8bit-message-encoding", "iso-8859-1")
-    j = journal.Reader(journal.SYSTEM_ONLY)
+    j = journal.Reader(path=_setJournalDirectory("rtkbase_str2str_log"))
+    #j = journal.Reader(journal.SYSTEM_ONLY)
     j.seek_tail()
     j.get_previous()
     while True:
