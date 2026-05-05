@@ -24,7 +24,7 @@ The wanted features are these:
     - and other non-filtered-out log entries.
 * Send an immediate email when something important happens (according to the settings).
 """, content-type = "text/x-rst" }
-license = { text = "GPL-3.0-or-later" }
+license = { text = "GPL-3" }
 authors = [
     { name = "Yves G.", email = "theYinYeti@yalis.fr" }
 ]
@@ -38,3 +38,6 @@ Repository = "https://github.com/Stefal/pyruse"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.scripts]
+pyruse = "pyruse.__main__:main"

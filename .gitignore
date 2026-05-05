@@ -2,3 +2,18 @@
 /build/
 *.egg-info/
 /dist/
+
+# Debian build artifacts
+debian/files
+debian/tmp
+debian/.debhelper/
+debian/*.substvars
+*.deb
+*.changes
+*.buildinfo
+*.dsc
+.pybuild/
+
+# build logs
+*.build
+*.log

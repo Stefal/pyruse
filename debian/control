@@ -1,0 +1,20 @@
+Source: pyruse
+Section: admin
+Priority: optional
+Maintainer: Stefal <contact@rtkbase.eu>
+Build-Depends: 
+  debhelper-compat (= 13),
+  dh-python,
+  python3-all,
+  pybuild-plugin-pyproject
+Standards-Version: 4.6.0
+
+Package: pyruse
+Architecture: all
+Depends:
+ ${python3:Depends},
+ ${misc:Depends},
+ python3-systemd
+Description: Route systemd-journal logs to filters and actions
+ Lightweight daemon to process systemd journal logs, apply filters,
+ trigger actions and send notifications.

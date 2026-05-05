@@ -1,0 +1,15 @@
+# binary
+extra/bin/*         /usr/bin/
+
+# systemd services
+extra/systemd/*.service /usr/lib/systemd/system/
+extra/systemd/action_nftBan.conf /etc/systemd/system/pyruse-boot@action_nftBan.service.d/
+extra/systemd/action_ipsetBan.conf /etc/systemd/system/pyruse-boot@action_ipsetBan.service.d/
+
+# doc
+README.md usr/share/doc/pyruse/
+Changelog.md usr/share/doc/pyruse/
+doc/* usr/share/doc/pyruse/
+extra/examples/* usr/share/doc/pyruse/extra/
+
+

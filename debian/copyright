@@ -1,0 +1,12 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: pyruse
+Source: https://github.com/Stefal/pyruse
+
+Files: *
+Copyright: 2024 Yves G. <theYinYeti@yalis.fr>
+           2026 Stefal <contact@rtkbase.eu>
+License: GPL-3
+
+License: GPL-3
+ On Debian systems, the complete text of the GNU General Public License
+ version 3 can be found in '/usr/share/common-licenses/GPL-3'.
