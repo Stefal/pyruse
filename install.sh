@@ -37,7 +37,8 @@ package() {
   cp -r extra/examples "${pkgdir}/usr/share/doc/${pkgname}/extra/"
 
   #python extra/setup/setup.py install --root="${pkgd
+  python -m pip install . --break-system-packages
 }
-apt install python3-systemd
+apt-get install python3-systemd -y
 package
 
