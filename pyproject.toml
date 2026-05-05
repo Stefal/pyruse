@@ -1,11 +1,12 @@
-from distutils.core import setup
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
-setup(
-    name='pyruse',
-    version='1.0',
-    license='GPL-3',
-    description='Route systemd-journal logs to filters and actions (ban, report…)',
-    long_description='''
+[project]
+name = "pyruse"
+version = "1.0"
+description = "Route systemd-journal logs to filters and actions (ban, report…)"
+readme = { text = """
 ================
 Python peruser of systemd-journal
 ================
@@ -22,12 +23,18 @@ The wanted features are these:
     - events of interest (according to the settings),
     - and other non-filtered-out log entries.
 * Send an immediate email when something important happens (according to the settings).
-    ''',
-    author='Yves G.',
-    author_email='theYinYeti@yalis.fr',
-    maintainer='Yves G.',
-    maintainer_email='theYinYeti@yalis.fr',
-    url='https://yalis.fr/git/yves/pyruse',
-    download_url='https://yalis.fr/git/yves/pyruse',
-    packages=['pyruse', 'pyruse.actions', 'pyruse.filters'],
-)
+""", content-type = "text/x-rst" }
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "Yves G.", email = "theYinYeti@yalis.fr" }
+]
+maintainers = [
+    { name = "Stefal"}
+]
+
+[project.urls]
+Homepage = "https://yalis.fr/git/yves/pyruse"
+Repository = "https://github.com/Stefal/pyruse"
+
+[tool.setuptools.packages.find]
+where = ["src"]
