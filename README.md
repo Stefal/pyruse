@@ -1,5 +1,9 @@
 # Python peruser of systemd-journal
 
+## Warning
+
+This pyruse fork is modified to work with RTKBase : https://github.com/Stefal/rtkbase/
+
 ## Summary
 
 This program is intended to be used as a lightweight replacement for both epylog and fail2ban.

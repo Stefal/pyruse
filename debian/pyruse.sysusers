@@ -1,0 +1,2 @@
+u _pyruse - "pyruse service user" /var/lib/pyruse
+m _pyruse systemd-journal

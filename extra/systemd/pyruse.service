@@ -2,14 +2,19 @@
 Description=Route systemd-journal logs to filters and actions (ban, report…)
 
 [Service]
+User=_pyruse
+Group=_pyruse
 ExecStart=/usr/bin/pyruse
 WorkingDirectory=/etc/pyruse
+StateDirectory=pyruse
 NoNewPrivileges=true
-PrivateDevices=yes
-PrivateTmp=yes
-ProtectHome=yes
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=true
 ProtectSystem=full
-ReadWriteDirectories=/var/lib/pyruse
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
 Restart=on-failure
 
 [Install]

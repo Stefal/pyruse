@@ -6,7 +6,9 @@ Build-Depends:
   debhelper-compat (= 13),
   dh-python,
   python3-all,
-  pybuild-plugin-pyproject
+  pybuild-plugin-pyproject,
+  polkitd,
+  systemd
 Standards-Version: 4.6.0
 
 Package: pyruse
